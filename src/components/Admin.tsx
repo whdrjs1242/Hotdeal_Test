@@ -47,3 +47,34 @@ export function AdminDealStatus({ id, status }: { id: number; status: string }) 
     </select>
   );
 }
+
+export function WithdrawalActions({ id }: { id: number }) {
+  const [state, setState] = useState<"idle" | "paid" | "rejected">("idle");
+  const [account, setAccount] = useState<string | null>(null);
+  async function reveal() {
+    const res = await fetch(`/api/admin/withdrawals/${id}`);
+    const d = await res.json();
+    setAccount(res.ok ? `${d.bank} ${d.account} (${d.holder})` : d.error);
+  }
+  async function act(status: "paid" | "rejected") {
+    const memo = status === "rejected" ? prompt("반려 사유") ?? "" : undefined;
+    const res = await fetch(`/api/admin/withdrawals/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status, memo }),
+    });
+    if (res.ok) setState(status);
+  }
+  if (state !== "idle") return <span className="text-xs font-semibold">{state === "paid" ? "✓ 송금 완료" : "반려됨"}</span>;
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs">
+      {account ? <span className="tnum select-all">{account}</span> : <button onClick={reveal} className="rounded-md px-2 py-1 ring-1 ring-[var(--d-ring)]">계좌 보기</button>}
+      <button onClick={() => act("paid")} className="rounded-md bg-[var(--d-ink)] px-2 py-1 font-semibold text-[var(--d-surface)]">
+        송금 완료
+      </button>
+      <button onClick={() => act("rejected")} className="rounded-md px-2 py-1 ring-1 ring-[var(--d-ring)]">
+        반려
+      </button>
+    </div>
+  );
+}

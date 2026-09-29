@@ -21,6 +21,7 @@ export interface DealCard {
   userId: number;
   nickname: string;
   userXp: number;
+  bountyId: number | null;
 }
 
 export interface DealDetail extends DealCard {
@@ -45,7 +46,7 @@ export interface ListParams {
 const CARD_COLS = sql`
   d.id, d.title, d.image_url, d.price, d.original_price, d.shipping, d.merchant, d.category, d.status,
   d.ends_at, d.votes_up, d.votes_down, d.comment_count, d.click_count, d.share_count, d.created_at,
-  d.user_id, u.nickname, u.xp AS user_xp`;
+  d.user_id, u.nickname, u.xp AS user_xp, d.bounty_id`;
 
 /** 커서 기반 페이지네이션 피드. OFFSET을 쓰지 않아 깊은 페이지도 인덱스 범위 스캔으로 끝난다. */
 export async function listDeals(p: ListParams): Promise<{ items: DealCard[]; nextCursor: string | null }> {

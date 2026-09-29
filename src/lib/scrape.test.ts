@@ -40,17 +40,21 @@ describe("ranking", () => {
 });
 
 describe("splitCommission", () => {
-  const base = { commission: 1000, posterId: 1, sharerId: 2, buyerId: 3, rewardEligible: true };
-  it("공유자 30%, 게시자 20%", () => {
+  const base = { commission: 1000, hunterId: 1, sharerId: 2, buyerId: 3, bountyPosterId: null, rewardEligible: true };
+  it("헌터 30%, 공유자 20%", () => {
     expect(splitCommission(base)).toEqual([
-      { userId: 2, delta: 300, kind: "share_reward" },
-      { userId: 1, delta: 200, kind: "post_reward" },
+      { userId: 1, delta: 300, kind: "hunter_reward" },
+      { userId: 2, delta: 200, kind: "share_reward" },
     ]);
   });
-  it("셀프 구매는 공유 리워드 없음", () => {
-    expect(splitCommission({ ...base, buyerId: 2 }).map((l) => l.kind)).toEqual(["post_reward"]);
+  it("수배에서 발견된 딜이면 수배자 10% 추가", () => {
+    expect(splitCommission({ ...base, bountyPosterId: 4 })).toContainEqual({ userId: 4, delta: 100, kind: "bounty_reward" });
   });
-  it("리워드 불가 머천트는 지급 안 함", () => {
+  it("본인 구매분은 본인 몫 제외", () => {
+    expect(splitCommission({ ...base, buyerId: 2 }).map((l) => l.kind)).toEqual(["hunter_reward"]);
+    expect(splitCommission({ ...base, bountyPosterId: 3 }).map((l) => l.kind)).not.toContain("bounty_reward");
+  });
+  it("분배 불가 판매처는 지급 안 함", () => {
     expect(splitCommission({ ...base, rewardEligible: false })).toEqual([]);
   });
 });

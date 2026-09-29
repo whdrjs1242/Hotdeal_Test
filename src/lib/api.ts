@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createHash } from "node:crypto";
-import { ZodError, type ZodType } from "zod";
+import { ZodError, type ZodTypeAny, type infer as ZodInfer } from "zod";
 import { getCurrentUser, type SessionUser } from "./auth";
 import { rateLimit } from "./cache";
 import { InvalidUrlError } from "./affiliate";
+import { BountyError } from "./bounties";
+import { InsufficientPointsError } from "./rewards";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -29,7 +31,7 @@ export async function limit(key: string, max: number, windowSec: number) {
   if (!(await rateLimit(key, max, windowSec))) throw new ApiError(429, "잠시 후 다시 시도해주세요");
 }
 
-export async function parseBody<T>(req: Request, schema: ZodType<T>): Promise<T> {
+export async function parseBody<S extends ZodTypeAny>(req: Request, schema: S): Promise<ZodInfer<S>> {
   let json: unknown;
   try {
     json = await req.json();
@@ -46,6 +48,9 @@ export function handler<C>(fn: (req: NextRequest, ctx: C) => Promise<Response>) 
       return await fn(req, ctx);
     } catch (e) {
       if (e instanceof ApiError) return NextResponse.json({ error: e.message }, { status: e.status });
+      if (e instanceof BountyError || e instanceof InsufficientPointsError) {
+        return NextResponse.json({ error: e.message }, { status: 400 });
+      }
       if (e instanceof InvalidUrlError) return NextResponse.json({ error: e.message }, { status: 400 });
       if (e instanceof ZodError) {
         return NextResponse.json({ error: "입력값을 확인해주세요", issues: e.issues }, { status: 400 });

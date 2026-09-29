@@ -13,18 +13,12 @@ export interface DailyRow {
   shares: number;
   commission: number;
   orders: number;
+  bounties: number;
+  finds: number;
+  arrivals: number;
 }
 
-export interface Totals {
-  signups: number;
-  referred: number;
-  deals: number;
-  clicks: number;
-  shareClicks: number;
-  shares: number;
-  commission: number;
-  orders: number;
-}
+export type Totals = Omit<DailyRow, "day">;
 
 /**
  * 운영 대시보드 데이터. 모든 지표는 같은 기간(KST 기준 최근 N일)으로 잘려 서로 맞아떨어진다.
@@ -37,7 +31,7 @@ export async function loadDashboard(days: RangeDays) {
   const fromTs = sql`((${from})::timestamp AT TIME ZONE 'Asia/Seoul')`;
   const since = sql`(((now() AT TIME ZONE 'Asia/Seoul')::date - ${days - 1}::int)::timestamp AT TIME ZONE 'Asia/Seoul')`;
 
-  const [daily, byNetwork, byCategory, topDeals, topSharers, heat, points, [live], reported] = await Promise.all([
+  const [daily, byNetwork, byCategory, topDeals, topSharers, heat, points, [live], reported, [funnel], withdrawals, hotBounties] = await Promise.all([
     sql<DailyRow[]>`
       WITH d AS (SELECT generate_series(${from}, (now() AT TIME ZONE 'Asia/Seoul')::date, interval '1 day')::date AS day)
       SELECT to_char(d.day, 'YYYY-MM-DD') AS day,
@@ -45,11 +39,13 @@ export async function loadDashboard(days: RangeDays) {
         COALESCE(dl.deals, 0)::int AS deals,
         COALESCE(c.clicks, 0)::int AS clicks, COALESCE(c.share_clicks, 0)::int AS share_clicks,
         COALESCE(s.shares, 0)::int AS shares,
-        COALESCE(cv.commission, 0)::int AS commission, COALESCE(cv.orders, 0)::int AS orders
+        COALESCE(cv.commission, 0)::int AS commission, COALESCE(cv.orders, 0)::int AS orders,
+        COALESCE(bn.bounties, 0)::int AS bounties, COALESCE(dl.finds, 0)::int AS finds,
+        COALESCE(ar.arrivals, 0)::int AS arrivals
       FROM d
       LEFT JOIN (SELECT (created_at AT TIME ZONE 'Asia/Seoul')::date AS day, count(*) AS signups, count(referred_by) AS referred
                  FROM users WHERE created_at >= ${fromTs} GROUP BY 1) u USING (day)
-      LEFT JOIN (SELECT (created_at AT TIME ZONE 'Asia/Seoul')::date AS day, count(*) AS deals
+      LEFT JOIN (SELECT (created_at AT TIME ZONE 'Asia/Seoul')::date AS day, count(*) AS deals, count(bounty_id) AS finds
                  FROM deals WHERE created_at >= ${fromTs} GROUP BY 1) dl USING (day)
       LEFT JOIN (SELECT (created_at AT TIME ZONE 'Asia/Seoul')::date AS day, count(*) AS clicks, count(sharer_id) AS share_clicks
                  FROM clicks WHERE created_at >= ${fromTs} GROUP BY 1) c USING (day)
@@ -57,6 +53,10 @@ export async function loadDashboard(days: RangeDays) {
                  FROM shares WHERE created_at >= ${fromTs} GROUP BY 1) s USING (day)
       LEFT JOIN (SELECT (created_at AT TIME ZONE 'Asia/Seoul')::date AS day, sum(commission) AS commission, count(*) AS orders
                  FROM conversions WHERE created_at >= ${fromTs} AND status <> 'canceled' GROUP BY 1) cv USING (day)
+      LEFT JOIN (SELECT (created_at AT TIME ZONE 'Asia/Seoul')::date AS day, count(*) AS bounties
+                 FROM bounties WHERE created_at >= ${fromTs} GROUP BY 1) bn USING (day)
+      LEFT JOIN (SELECT (created_at AT TIME ZONE 'Asia/Seoul')::date AS day, count(*) AS arrivals
+                 FROM share_arrivals WHERE created_at >= ${fromTs} GROUP BY 1) ar USING (day)
       ORDER BY d.day`,
     sql<{ network: string; clicks: number }[]>`
       SELECT network, count(*)::int AS clicks FROM clicks WHERE created_at >= ${since}
@@ -96,12 +96,27 @@ export async function loadDashboard(days: RangeDays) {
              (SELECT count(*)::int FROM users WHERE handle IS NOT NULL) AS creators`,
     sql<{ id: number; title: string; status: string; reportCount: number }[]>`
       SELECT id, title, status, report_count FROM deals WHERE report_count > 0 ORDER BY updated_at DESC LIMIT 12`,
+    sql<{ created: number; joined: number; found: number; awarded: number }[]>`
+      SELECT count(*)::int AS created,
+             count(*) FILTER (WHERE participant_count > 0)::int AS joined,
+             count(*) FILTER (WHERE found_count > 0)::int AS found,
+             count(*) FILTER (WHERE status = 'awarded')::int AS awarded
+      FROM bounties WHERE created_at >= ${since}`,
+    sql<{ id: number; nickname: string; points: number; amountKrw: number; bankName: string; accountLast4: string; holderName: string; createdAt: Date }[]>`
+      SELECT w.id, u.nickname, w.points, w.amount_krw, w.bank_name, w.account_last4, w.holder_name, w.created_at
+      FROM withdrawals w JOIN users u ON u.id = w.user_id WHERE w.status = 'requested' ORDER BY w.id LIMIT 30`,
+    sql<{ id: number; title: string; pot: number; participantCount: number; foundCount: number; status: string }[]>`
+      SELECT id, title, pot, participant_count, found_count, status FROM bounties
+      WHERE created_at >= ${since} ORDER BY participant_count DESC, pot DESC LIMIT 8`,
   ]);
 
   const previous = daily.slice(0, daily.length - days);
   const current = daily.slice(-days);
   const sum = (rows: DailyRow[]): Totals => {
-    const t: Totals = { signups: 0, referred: 0, deals: 0, clicks: 0, shareClicks: 0, shares: 0, commission: 0, orders: 0 };
+    const t: Totals = {
+      signups: 0, referred: 0, deals: 0, clicks: 0, shareClicks: 0, shares: 0, commission: 0, orders: 0,
+      bounties: 0, finds: 0, arrivals: 0,
+    };
     for (const r of rows) for (const k of Object.keys(t) as (keyof Totals)[]) t[k] += r[k];
     return t;
   };
@@ -119,6 +134,9 @@ export async function loadDashboard(days: RangeDays) {
     points,
     live,
     reported,
+    funnel,
+    withdrawals,
+    hotBounties,
   };
 }
 

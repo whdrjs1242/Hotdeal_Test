@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "줍줍 - 실시간 핫딜 공유",
     short_name: "줍줍",
-    description: "모두가 찾은 최저가 핫딜. 공유하면 수익도 함께.",
+    description: "찾고 싶은 상품은 수배로, 발견한 핫딜은 공유로. 모두가 포인트를 버는 핫딜 앱",
     start_url: "/?utm_source=pwa",
     display: "standalone",
     background_color: "#ffffff",

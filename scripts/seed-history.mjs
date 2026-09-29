@@ -106,19 +106,65 @@ for (let d = DAYS - 1; d >= 0; d--) {
   }
 }
 
-// 포인트 원장: 공유자 30% / 게시자 20%
+// 현상금 수배: 일별 생성 + 참여자 + 발견 상품 연결 + 공유 유입
+await sql`
+  INSERT INTO bounties (user_id, title, target_price, category, stake, pot, status, expires_at, participant_count, created_at)
+  SELECT (SELECT id FROM users u WHERE u.id <> g.n * 0 - 1 ORDER BY random() LIMIT 1),
+         (ARRAY['에어팟 프로','다이슨 에어랩','닌텐도 스위치','LG 그램 16','스탠리 텀블러','캠핑 의자','로봇청소기','아이패드 에어'])[1 + floor(random() * 8)::int]
+           || ' ' || (ARRAY['최저가','정품','새상품','리퍼'])[1 + floor(random() * 4)::int],
+         (floor(random() * 90) + 5)::int * 10000,
+         (ARRAY['digital','appliance','living','fashion','beauty','baby'])[1 + floor(random() * 6)::int],
+         s.stake, s.stake + floor(random() * s.stake)::int,
+         CASE WHEN g.d < 3 THEN 'open' WHEN random() < 0.55 THEN 'awarded' ELSE 'expired' END,
+         now() - make_interval(days => g.d) + interval '7 days',
+         floor(random() * 40 * (1 + (${DAYS} - g.d)::float / ${DAYS}))::int,
+         now() - make_interval(days => g.d, hours => floor(random() * 20)::int)
+  FROM (SELECT d, n FROM generate_series(0, ${DAYS} - 1) d, generate_series(1, 4) n
+        WHERE random() < 0.35 + 0.5 * (${DAYS} - d)::float / ${DAYS}) g,
+       LATERAL (SELECT ((floor(random() * 30) + 3) * 100)::int AS stake) s`;
+await sql`
+  UPDATE deals d SET bounty_id = b.id
+  FROM (SELECT DISTINCT ON (dl.id) dl.id AS deal_id, b.id FROM deals dl
+        JOIN bounties b ON b.created_at < dl.created_at AND b.created_at > dl.created_at - interval '5 days'
+        WHERE dl.bounty_id IS NULL AND dl.id % 6 = 0 ORDER BY dl.id, random()) b
+  WHERE d.id = b.deal_id`;
+await sql`UPDATE bounties b SET found_count = (SELECT count(*) FROM deals WHERE bounty_id = b.id)`;
+await sql`UPDATE bounties SET status = 'expired' WHERE status = 'awarded' AND found_count = 0`;
+await sql`
+  UPDATE bounties b SET awarded_deal_id = (SELECT id FROM deals WHERE bounty_id = b.id ORDER BY votes_up DESC LIMIT 1)
+  WHERE status = 'awarded'`;
+await sql`
+  INSERT INTO share_arrivals (sharer_id, target_type, target_id, ip_hash, day, created_at)
+  SELECT sharer_id, 'deal', deal_id, ip_hash, (created_at AT TIME ZONE 'Asia/Seoul')::date, created_at
+  FROM clicks WHERE sharer_id IS NOT NULL AND ip_hash LIKE 'h%'
+  ON CONFLICT DO NOTHING`;
+await sql`
+  INSERT INTO points_ledger (user_id, delta, kind, status, memo, created_at)
+  SELECT sharer_id, 10, 'activity', 'available', '공유한 딜로 친구 유입', created_at FROM share_arrivals`;
+
+// 포인트 원장: 헌터 30% / 공유자 20% / 수배자 10%
 await sql`
   INSERT INTO points_ledger (user_id, delta, kind, status, conversion_id, created_at)
-  SELECT cl.sharer_id, floor(cv.commission * 0.3)::int, 'share_reward',
+  SELECT cl.sharer_id, floor(cv.commission * 0.2)::int, 'share_reward',
          CASE cv.status WHEN 'confirmed' THEN 'available' WHEN 'canceled' THEN 'canceled' ELSE 'pending' END, cv.id, cv.created_at
   FROM conversions cv JOIN clicks cl ON cl.id = cv.click_id WHERE cl.sharer_id IS NOT NULL
   ON CONFLICT DO NOTHING`;
 await sql`
   INSERT INTO points_ledger (user_id, delta, kind, status, conversion_id, created_at)
-  SELECT d.user_id, floor(cv.commission * 0.2)::int, 'post_reward',
+  SELECT d.user_id, floor(cv.commission * 0.3)::int, 'hunter_reward',
          CASE cv.status WHEN 'confirmed' THEN 'available' WHEN 'canceled' THEN 'canceled' ELSE 'pending' END, cv.id, cv.created_at
   FROM conversions cv JOIN clicks cl ON cl.id = cv.click_id JOIN deals d ON d.id = cl.deal_id
   ON CONFLICT DO NOTHING`;
+await sql`
+  INSERT INTO points_ledger (user_id, delta, kind, status, conversion_id, created_at)
+  SELECT b.user_id, floor(cv.commission * 0.1)::int, 'bounty_reward',
+         CASE cv.status WHEN 'confirmed' THEN 'available' WHEN 'canceled' THEN 'canceled' ELSE 'pending' END, cv.id, cv.created_at
+  FROM conversions cv JOIN clicks cl ON cl.id = cv.click_id JOIN deals d ON d.id = cl.deal_id JOIN bounties b ON b.id = d.bounty_id
+  ON CONFLICT DO NOTHING`;
+await sql`
+  INSERT INTO points_ledger (user_id, delta, kind, status, memo, created_at)
+  SELECT d.user_id, floor(b.pot * 0.9)::int, 'bounty_prize', 'available', '현상금 획득', b.updated_at
+  FROM bounties b JOIN deals d ON d.id = b.awarded_deal_id`;
 await sql`
   UPDATE users u SET points_available = COALESCE(s.a, 0), points_pending = COALESCE(s.p, 0)
   FROM (SELECT user_id, sum(delta) FILTER (WHERE status='available') a, sum(delta) FILTER (WHERE status='pending') p

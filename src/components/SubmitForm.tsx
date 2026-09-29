@@ -109,7 +109,7 @@ export function SubmitForm({ initialUrl }: { initialUrl: string }) {
         <div className="flex items-center gap-2 rounded-xl bg-brand-soft px-3 py-2 text-sm">
           <b>{preview.merchant.name}</b>
           {preview.monetized ? (
-            <span className="text-brand">✓ 수익 공유 가능 딜</span>
+            <span className="text-brand">✓ 구매 기여 포인트 적립 딜</span>
           ) : (
             <span className="text-sub">일반 링크</span>
           )}

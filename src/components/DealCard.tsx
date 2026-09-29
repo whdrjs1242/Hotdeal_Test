@@ -34,6 +34,7 @@ export function DealCard({ deal, rank, refCode }: { deal: Deal; rank?: number; r
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 text-[11px] text-sub">
+          {deal.bountyId && <span className="rounded bg-[#fbf1dc] px-1 font-bold text-[#c2410c] dark:bg-[#2a2118]">🎯 수배 발견</span>}
           <span className="font-semibold text-ink/80">{merchantById(deal.merchant).name}</span>
           <span>·</span>
           <span>{timeAgo(deal.createdAt)}</span>

@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 /**
  * 크리에이터 핫딜 채널 (link-in-bio SaaS).
- * 이 페이지의 모든 딜 링크엔 크리에이터 ref 코드가 붙어, 팔로워 구매 수익이 크리에이터에게 공유된다.
+ * 이 페이지의 모든 딜 링크엔 크리에이터 ref 코드가 붙어, 팔로워 유입·구매가 크리에이터의 기여 포인트로 쌓인다.
  */
 export default async function ChannelPage({ params }: Props) {
   const c = await loadCreator(decodeURIComponent((await params).handle));

@@ -4,6 +4,7 @@ import { handler, idParam, limit, parseBody, requireUser } from "@/lib/api";
 import { sql } from "@/lib/db";
 import { refreshHotScore } from "@/lib/deals";
 import { XP } from "@/lib/levels";
+import { grantActivity } from "@/lib/rewards";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -24,5 +25,6 @@ export const POST = handler<Ctx>(async (req, { params }) => {
   if (!c) return NextResponse.json({ error: "없는 딜이에요" }, { status: 404 });
   await sql`UPDATE users SET xp = xp + ${XP.comment} WHERE id = ${user.id}`;
   await refreshHotScore(dealId);
+  await grantActivity(user.id, "comment", `d${c.id}`, "댓글 참여").catch(() => 0);
   return NextResponse.json({ ...c, body, userId: user.id, nickname: user.nickname, xp: user.xp }, { status: 201 });
 });

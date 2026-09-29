@@ -8,6 +8,8 @@ import { hotScore } from "./ranking";
 import { notifyAlertMatches } from "./alerts";
 import { XP } from "./levels";
 import { invalidate } from "./cache";
+import { BountyError, notifyBountyFound, refreshBountyScore } from "./bounties";
+import { grantActivity } from "./rewards";
 
 export const createDealSchema = z.object({
   url: z.string().min(8).max(2000),
@@ -19,6 +21,8 @@ export const createDealSchema = z.object({
   imageUrl: z.string().url().max(1000).optional().nullable().or(z.literal("")),
   category: z.string().refine((c) => CATEGORY_IDS.includes(c)).optional(),
   endsAt: z.coerce.date().optional().nullable(),
+  /** 수배지에 대한 발견 상품이면 수배 id */
+  bountyId: z.coerce.number().int().positive().optional().nullable(),
 });
 
 export type CreateDealInput = z.infer<typeof createDealSchema>;
@@ -49,14 +53,23 @@ export async function createDeal(userId: number, input: CreateDealInput) {
   const category = input.category ?? guessCategory(input.title, link.merchant.id);
 
   const deal = await sql.begin(async (tx) => {
+    if (input.bountyId) {
+      const [b] = await tx<{ userId: number }[]>`
+        SELECT user_id FROM bounties WHERE id = ${input.bountyId} AND status = 'open' AND expires_at > now() FOR UPDATE`;
+      if (!b) throw new BountyError("마감된 수배예요");
+      if (b.userId === userId) throw new BountyError("내 수배에는 직접 발견 상품을 올릴 수 없어요");
+      const [dup] = await tx`SELECT 1 FROM deals WHERE bounty_id = ${input.bountyId} AND canonical_url = ${link.canonicalUrl}`;
+      if (dup) throw new BountyError("이미 이 수배에 올라온 상품이에요");
+    }
     const [d] = await tx<{ id: number }[]>`
       INSERT INTO deals (user_id, title, description, original_url, canonical_url, merchant, network, monetized,
-                         image_url, price, original_price, shipping, category, ends_at, hot_score, created_at)
+                         image_url, price, original_price, shipping, category, ends_at, hot_score, created_at, bounty_id)
       VALUES (${userId}, ${input.title}, ${input.description ?? null}, ${link.originalUrl}, ${link.canonicalUrl},
               ${link.merchant.id}, ${link.network}, ${link.monetized}, ${input.imageUrl || null}, ${input.price ?? null},
               ${input.originalPrice ?? null}, ${input.shipping ?? null}, ${category}, ${input.endsAt ?? null},
-              ${score}, ${createdAt})
+              ${score}, ${createdAt}, ${input.bountyId ?? null})
       RETURNING id`;
+    if (input.bountyId) await tx`UPDATE bounties SET found_count = found_count + 1 WHERE id = ${input.bountyId}`;
     if (input.price) {
       await tx`INSERT INTO price_history (canonical_url, price, deal_id) VALUES (${link.canonicalUrl}, ${input.price}, ${d.id})`;
     }
@@ -68,6 +81,11 @@ export async function createDeal(userId: number, input: CreateDealInput) {
   after(async () => {
     if (link.monetized) await ensureAffiliateBase(link.canonicalUrl, link.network);
     await invalidate("feed:new:all:", `feed:new:${category}:`);
+    if (input.bountyId) {
+      await refreshBountyScore(input.bountyId);
+      await grantActivity(userId, "hunt", String(input.bountyId), "수배 상품 발견").catch(() => {});
+      await notifyBountyFound(input.bountyId, deal.id, userId, input.price ?? null).catch((e) => console.error(e));
+    }
     await notifyAlertMatches({
       id: deal.id,
       title: input.title,

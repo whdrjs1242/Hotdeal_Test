@@ -4,6 +4,7 @@ import { handler, idParam, limit, parseBody, requireUser } from "@/lib/api";
 import { sql } from "@/lib/db";
 import { refreshHotScore } from "@/lib/deals";
 import { XP } from "@/lib/levels";
+import { grantActivity } from "@/lib/rewards";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -37,6 +38,8 @@ export const POST = handler<Ctx>(async (req, { params }) => {
   if (!result) return NextResponse.json({ error: "없는 딜이에요" }, { status: 404 });
   if (result === "own") return NextResponse.json({ error: "내 딜에는 투표할 수 없어요" }, { status: 400 });
   await refreshHotScore(dealId);
+  // 평가 참여 보상 (딜당 1회)
+  if (result.value !== 0) await grantActivity(user.id, "vote", String(dealId), "딜 평가 참여").catch(() => 0);
   const [d] = await sql<{ votesUp: number; votesDown: number }[]>`SELECT votes_up, votes_down FROM deals WHERE id = ${dealId}`;
   return NextResponse.json({ myVote: result.value, ...d });
 });

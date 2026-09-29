@@ -5,8 +5,8 @@ import { env } from "@/lib/env";
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),
-  title: { default: "줍줍 — 오늘의 핫딜, 줍고 나누고 벌자", template: "%s · 줍줍" },
-  description: "모두가 찾은 최저가 핫딜을 실시간으로. 공유하면 수익도 함께 나눠요.",
+  title: { default: "줍줍 — 현상금 걸면 헌터가 최저가를 찾아온다", template: "%s · 줍줍" },
+  description: "원하는 상품에 현상금을 걸면 헌터들이 최저가를 찾아와요. 수배자·참여자·헌터 모두 포인트를 버는 핫딜 앱",
   applicationName: "줍줍",
   appleWebApp: { capable: true, title: "줍줍", statusBarStyle: "default" },
   openGraph: { siteName: "줍줍", type: "website", locale: "ko_KR" },

@@ -17,6 +17,7 @@ import { ReportButtons } from "@/components/ReportButtons";
 import { Sparkline } from "@/components/Sparkline";
 import { Countdown } from "@/components/Countdown";
 import { BackButton } from "@/components/BackButton";
+import { ShareArrival } from "@/components/ShareArrival";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ r?: string }> };
 
@@ -54,14 +55,15 @@ export default async function DealPage({ params, searchParams }: Props) {
   const shareUrl = `${env.siteUrl}/deals/${deal.id}${user ? `?r=${user.refCode}` : ""}`;
   const buyHref = `/go/${deal.id}${sp.r ? `?r=${encodeURIComponent(sp.r)}` : ""}`;
   const rewardText = !user
-    ? "로그인하면 내 공유 링크로 구매가 일어날 때마다 수익을 받아요"
+    ? "로그인하고 공유하면 친구가 들어올 때마다 포인트를 받아요"
     : merchant.rewardEligible
-      ? `이 링크로 친구가 구매하면 수수료의 ${REWARD_POLICY.sharerRate * 100}%가 내 포인트로!`
-      : "공유 링크로 친구가 들어오면 XP가 쌓이고 헌터 랭킹이 올라가요";
+      ? `친구가 들어오면 포인트, 구매로 이어지면 구매 기여 포인트(${REWARD_POLICY.sharerRate * 100}%)까지!`
+      : "친구가 들어올 때마다 포인트가 쌓이고 헌터 랭킹이 올라가요";
   const lv = levelOf(deal.userXp);
 
   return (
     <article className="pb-24">
+      <ShareArrival type="deal" id={deal.id} code={sp.r} />
       <div className="pt-safe sticky top-0 z-30 flex h-12 items-center gap-2 bg-surface/95 px-2 backdrop-blur">
         <BackButton />
         <span className="truncate text-sm font-semibold">{merchant.name} 핫딜</span>
@@ -82,6 +84,11 @@ export default async function DealPage({ params, searchParams }: Props) {
       </div>
 
       <section className="bg-surface px-4 pb-4 pt-3">
+        {deal.bountyId && (
+          <Link href={`/bounties/${deal.bountyId}`} className="wanted mb-3 flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold">
+            🎯 현상금 수배에서 발견된 상품이에요 <span className="ml-auto">수배 보기 ›</span>
+          </Link>
+        )}
         <div className="flex items-center gap-2 text-xs text-sub">
           <span className="rounded bg-canvas px-1.5 py-0.5 font-semibold text-ink/80">{merchant.name}</span>
           <span>{timeAgo(deal.createdAt)}</span>
@@ -128,11 +135,11 @@ export default async function DealPage({ params, searchParams }: Props) {
       </div>
 
       <p className="px-4 py-4 text-[11px] leading-relaxed text-sub">
-        {deal.monetized
-          ? `이 게시물의 구매 링크는 제휴 마케팅 링크로, 구매 시 줍줍이 일정액의 수수료를 제공받을 수 있습니다.${
-              merchant.id === "coupang" ? " (쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.)" : ""
-            } 구매 가격에는 영향이 없습니다.`
-          : "가격과 재고는 판매처 사정에 따라 바뀔 수 있어요."}
+        가격과 재고는 판매처 사정에 따라 바뀔 수 있어요.
+        {deal.monetized &&
+          (merchant.id === "coupang"
+            ? " 이 게시물은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다."
+            : " 구매 시 줍줍이 판매처로부터 일정 수수료를 받을 수 있으며, 구매 가격에는 영향이 없습니다.")}
       </p>
 
       <div className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-md gap-2 border-t border-line bg-surface px-3 pt-2 pb-2">

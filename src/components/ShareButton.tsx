@@ -13,7 +13,7 @@ declare global {
 
 /**
  * 공유 = 성장 엔진. 로그인 사용자의 공유 링크엔 ref 코드가 붙어
- * 이 링크로 들어온 사람이 구매하면 공유자에게 수익이 쌓인다.
+ * 이 링크로 친구가 들어오면 유입 포인트, 구매로 이어지면 구매 기여 포인트가 쌓인다.
  */
 export function ShareButton({
   dealId,
@@ -21,18 +21,23 @@ export function ShareButton({
   shareUrl,
   rewardText,
   variant = "full",
+  trackPath,
+  label = "📣 공유하고 포인트 받기",
 }: {
   dealId: number;
   title: string;
   shareUrl: string;
   rewardText: string;
   variant?: "full" | "icon";
+  /** 공유 기록 API (기본: 딜 공유) */
+  trackPath?: string;
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const track = (channel: string) =>
-    fetch(`/api/deals/${dealId}/share`, {
+    fetch(trackPath ?? `/api/deals/${dealId}/share`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ channel }),
@@ -84,7 +89,7 @@ export function ShareButton({
         </button>
       ) : (
         <button onClick={() => setOpen(true)} className="w-full rounded-2xl bg-ink p-4 text-left text-surface">
-          <div className="text-[15px] font-bold">📣 공유하고 수익 받기</div>
+          <div className="text-[15px] font-bold">{label}</div>
           <div className="mt-0.5 text-xs opacity-80">{rewardText}</div>
         </button>
       )}
@@ -92,7 +97,7 @@ export function ShareButton({
         <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={() => setOpen(false)}>
           <div className="pb-safe mx-auto w-full max-w-md rounded-t-3xl bg-surface p-5" onClick={(e) => e.stopPropagation()}>
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line" />
-            <h3 className="text-lg font-bold">친구에게 핫딜 알려주기</h3>
+            <h3 className="text-lg font-bold">친구에게 알려주기</h3>
             <p className="mt-1 text-sm text-sub">{rewardText}</p>
             <div className="mt-5 grid grid-cols-3 gap-3 text-center text-xs">
               <button onClick={kakao} className="flex flex-col items-center gap-1.5">

@@ -12,7 +12,19 @@ interface C {
   xp: number;
 }
 
-export function Comments({ dealId, initial, loggedIn }: { dealId: number; initial: C[]; loggedIn: boolean }) {
+export function Comments({
+  dealId,
+  initial,
+  loggedIn,
+  endpoint,
+  nextPath,
+}: {
+  dealId: number;
+  initial: C[];
+  loggedIn: boolean;
+  endpoint?: string;
+  nextPath?: string;
+}) {
   const [items, setItems] = useState(initial);
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
@@ -21,7 +33,7 @@ export function Comments({ dealId, initial, loggedIn }: { dealId: number; initia
     e.preventDefault();
     if (!body.trim()) return;
     setBusy(true);
-    const res = await fetch(`/api/deals/${dealId}/comments`, {
+    const res = await fetch(endpoint ?? `/api/deals/${dealId}/comments`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ body }),
@@ -61,7 +73,7 @@ export function Comments({ dealId, initial, loggedIn }: { dealId: number; initia
           </button>
         </form>
       ) : (
-        <Link href={`/login?next=/deals/${dealId}`} className="mt-4 block rounded-xl bg-canvas py-3 text-center text-sm text-sub">
+        <Link href={`/login?next=${nextPath ?? `/deals/${dealId}`}`} className="mt-4 block rounded-xl bg-canvas py-3 text-center text-sm text-sub">
           로그인하고 댓글 남기기
         </Link>
       )}

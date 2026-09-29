@@ -5,7 +5,9 @@ import { sql } from "@/lib/db";
 import { CATEGORIES } from "@/lib/categories";
 import { DealCard } from "@/components/DealCard";
 import { FeedList } from "@/components/FeedList";
-import { compact } from "@/lib/format";
+import { compact, won } from "@/lib/format";
+import { listBounties } from "@/lib/bounties";
+import { getCurrentUser } from "@/lib/auth";
 
 const SORTS: { id: SortKey; label: string }[] = [
   { id: "hot", label: "🔥 핫딜" },
@@ -22,7 +24,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
   const category = sp.category ?? "all";
   const q = sp.q?.trim() || null;
 
-  const [{ items, nextCursor }, stats] = await Promise.all([
+  const [{ items, nextCursor }, stats, hotBounties, user] = await Promise.all([
     q ? listDeals({ sort, category, q }) : cached(`feed:${sort}:${category}:`, 15, () => listDeals({ sort, category })),
     cached("stats:today", 60, async () => {
       const [s] = await sql<{ deals: number; clicks: number; saved: number }[]>`
@@ -33,7 +35,12 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
              FROM deals WHERE created_at > now() - interval '24 hours' AND original_price > price) AS saved`;
       return s;
     }),
+    q ? { items: [] } : cached("bounties:strip", 30, () => listBounties({ sort: "hot", limit: 8 })),
+    getCurrentUser(),
   ]);
+  const unread = user
+    ? (await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM notifications WHERE user_id = ${user.id} AND read_at IS NULL`)[0].n
+    : 0;
 
   const qs = (patch: Record<string, string>) => {
     const p = new URLSearchParams({ sort, category, ...(q ? { q } : {}), ...patch });
@@ -59,6 +66,14 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
               className="h-9 w-full rounded-full bg-canvas px-4 text-sm outline-none placeholder:text-sub"
             />
           </form>
+          <Link href="/alerts" aria-label="알림" className="relative text-xl">
+            🔔
+            {unread > 0 && (
+              <span className="absolute -right-1.5 -top-1 min-w-4 rounded-full bg-brand px-1 text-center text-[10px] font-bold leading-4 text-white">
+                {unread > 99 ? "99+" : unread}
+              </span>
+            )}
+          </Link>
         </div>
         <nav className="no-scrollbar mt-2 flex gap-4 overflow-x-auto border-b border-line px-4">
           {SORTS.map((s) => (
@@ -86,17 +101,40 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
         </div>
       </header>
 
-      {!q && (
-        <Link href="/me" className="mx-4 mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-brand to-[#ff2e55] p-4 text-white">
-          <div className="text-3xl">💸</div>
-          <div className="flex-1 text-sm leading-snug">
-            <div className="font-bold">오늘 줍줍러들이 아낀 돈 {compact(Number(stats.saved))}원</div>
-            <div className="opacity-90">
-              새 딜 {stats.deals}개 · 구매 이동 {compact(stats.clicks)}회 — 공유하면 수익을 나눠드려요
-            </div>
+      {!q && hotBounties.items.length > 0 && (
+        <section className="mt-3">
+          <div className="flex items-baseline justify-between px-4">
+            <h2 className="font-black">🎯 지금 뜨는 현상금 수배</h2>
+            <Link href="/bounties" className="text-xs text-sub">
+              전체 ›
+            </Link>
           </div>
-          <span className="text-lg">›</span>
-        </Link>
+          <div className="no-scrollbar mt-2 flex gap-2.5 overflow-x-auto px-4 pb-1">
+            {hotBounties.items.map((b) => (
+              <Link key={b.id} href={`/bounties/${b.id}`} className="wanted w-40 shrink-0 rounded-2xl p-3">
+                <span className="wanted-stamp text-[9px]">WANTED</span>
+                <div className="mt-1.5 line-clamp-2 h-10 text-[13px] font-bold leading-snug">{b.title}</div>
+                <div className="mt-1 text-[11px] opacity-80">{b.targetPrice ? `${won(b.targetPrice)} 이하` : "최저가 찾기"}</div>
+                <div className="mt-2 text-lg font-black">💰 {compact(b.pot)}P</div>
+                <div className="text-[11px] opacity-80">
+                  🙋 {compact(b.participantCount)}명 · 발견 {b.foundCount}
+                </div>
+              </Link>
+            ))}
+            <Link href="/bounties/new" className="flex w-32 shrink-0 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-line text-center text-xs text-sub">
+              <span className="text-2xl">＋</span>
+              찾는 상품
+              <br />
+              수배 걸기
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {!q && (
+        <div className="mx-4 mt-3 rounded-xl bg-brand-soft px-3 py-2 text-xs text-ink/80">
+          💸 오늘 줍줍러들이 아낀 돈 <b>{compact(Number(stats.saved))}원</b> · 새 딜 {stats.deals}개 · 구매 이동 {compact(stats.clicks)}회
+        </div>
       )}
 
       {q && <p className="px-4 pt-3 text-sm text-sub">‘{q}’ 검색 결과</p>}

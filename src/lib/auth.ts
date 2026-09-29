@@ -3,6 +3,7 @@ import { cache } from "react";
 import { SignJWT, jwtVerify } from "jose";
 import { env } from "./env";
 import { sql } from "./db";
+import { credit, SIGNUP_BONUS } from "./rewards";
 
 export const SESSION_COOKIE = "jj_session";
 export const REF_COOKIE = "jj_ref";
@@ -74,11 +75,15 @@ export async function createUser(input: { nickname: string; kakaoId?: string; av
   let nickname = input.nickname.trim().slice(0, 20) || "줍러";
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
-      const [u] = await sql<{ id: number }[]>`
-        INSERT INTO users (nickname, kakao_id, avatar_url, ref_code, referred_by)
-        VALUES (${nickname}, ${input.kakaoId ?? null}, ${input.avatarUrl ?? null}, ${randomCode()}, ${referrer?.id ?? null})
-        RETURNING id`;
-      return u.id;
+      return await sql.begin(async (tx) => {
+        const [u] = await tx<{ id: number }[]>`
+          INSERT INTO users (nickname, kakao_id, avatar_url, ref_code, referred_by)
+          VALUES (${nickname}, ${input.kakaoId ?? null}, ${input.avatarUrl ?? null}, ${randomCode()}, ${referrer?.id ?? null})
+          RETURNING id`;
+        // 가입 축하 포인트 → 첫 수배지를 바로 걸어볼 수 있게
+        if (SIGNUP_BONUS > 0) await credit(tx, u.id, SIGNUP_BONUS, "signup_bonus", "가입 축하 포인트", "signup");
+        return u.id;
+      });
     } catch (e) {
       if ((e as { code?: string }).code !== "23505") throw e;
       nickname = `${input.nickname.trim().slice(0, 15) || "줍러"}${Math.floor(Math.random() * 9000 + 1000)}`;

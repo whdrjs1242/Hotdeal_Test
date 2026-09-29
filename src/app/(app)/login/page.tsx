@@ -14,14 +14,15 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <div className="text-center">
         <div className="text-5xl font-black text-brand">줍줍</div>
         <p className="mt-3 text-[15px] leading-relaxed text-sub">
-          핫딜을 줍고, 나누고, 함께 벌어요.
+          찾는 상품은 수배로, 발견한 핫딜은 공유로.
           <br />
           원하는 상품이 싸지면 제일 먼저 알려드릴게요.
         </p>
       </div>
       <ul className="mx-auto mt-8 space-y-2 text-sm">
         <li>🔔 키워드·목표가 핫딜 알림</li>
-        <li>💸 내 공유 링크로 구매 시 수익 공유</li>
+        <li>🎯 원하는 상품에 현상금 걸기 — 헌터가 찾아와요</li>
+        <li>💸 참여·공유·발견 모두 포인트, 현금으로 교환</li>
         <li>🏆 헌터 레벨 & 시즌 랭킹</li>
       </ul>
       <a

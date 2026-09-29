@@ -22,6 +22,7 @@ export interface DealCard {
   nickname: string;
   userXp: number;
   bountyId: number | null;
+  userChar: string | null;
 }
 
 export interface DealDetail extends DealCard {
@@ -46,7 +47,8 @@ export interface ListParams {
 const CARD_COLS = sql`
   d.id, d.title, d.image_url, d.price, d.original_price, d.shipping, d.merchant, d.category, d.status,
   d.ends_at, d.votes_up, d.votes_down, d.comment_count, d.click_count, d.share_count, d.created_at,
-  d.user_id, u.nickname, u.xp AS user_xp, d.bounty_id`;
+  d.user_id, u.nickname, u.xp AS user_xp, d.bounty_id,
+  (SELECT image FROM shop_items WHERE item_key = u.equip_character) AS user_char`;
 
 /** 커서 기반 페이지네이션 피드. OFFSET을 쓰지 않아 깊은 페이지도 인덱스 범위 스캔으로 끝난다. */
 export async function listDeals(p: ListParams): Promise<{ items: DealCard[]; nextCursor: string | null }> {
@@ -122,8 +124,9 @@ export async function getPriceHistory(canonicalUrl: string) {
 }
 
 export async function getComments(dealId: number) {
-  return sql<{ id: number; body: string; createdAt: string; userId: number; nickname: string; xp: number }[]>`
-    SELECT c.id, c.body, c.created_at, c.user_id, u.nickname, u.xp
+  return sql<{ id: number; body: string; createdAt: string; userId: number; nickname: string; xp: number; userChar: string | null }[]>`
+    SELECT c.id, c.body, c.created_at, c.user_id, u.nickname, u.xp,
+           (SELECT image FROM shop_items WHERE item_key = u.equip_character) AS user_char
     FROM comments c JOIN users u ON u.id = c.user_id
     WHERE c.deal_id = ${dealId} ORDER BY c.id LIMIT 300`;
 }

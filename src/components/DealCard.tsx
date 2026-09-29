@@ -53,7 +53,7 @@ export function DealCard({ deal, rank, refCode }: { deal: Deal; rank?: number; r
           <span>💬 {compact(deal.commentCount)}</span>
           <span>👆 {compact(deal.clickCount)}</span>
           <span className="ml-auto truncate">
-            {lv.emoji} {deal.nickname}
+            {deal.userChar ?? lv.emoji} {deal.nickname}
           </span>
         </div>
       </div>

@@ -10,6 +10,7 @@ interface C {
   createdAt: string | Date;
   nickname: string;
   xp: number;
+  userChar?: string | null;
 }
 
 export function Comments({
@@ -52,7 +53,7 @@ export function Comments({
         {items.map((c) => (
           <li key={c.id} className="text-sm">
             <div className="text-xs text-sub">
-              {levelOf(c.xp).emoji} <b className="text-ink/80">{c.nickname}</b> · {timeAgo(c.createdAt)}
+              {c.userChar ?? levelOf(c.xp).emoji} <b className="text-ink/80">{c.nickname}</b> · {timeAgo(c.createdAt)}
             </div>
             <p className="mt-0.5 whitespace-pre-wrap break-words">{c.body}</p>
           </li>

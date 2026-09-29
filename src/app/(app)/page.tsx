@@ -101,6 +101,22 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
         </div>
       </header>
 
+      {!q && (
+        <nav className="mt-3 grid grid-cols-4 gap-2 px-4 text-center text-[11px] font-semibold">
+          {[
+            { href: "/questions", icon: "💬", label: "살까말까 질문" },
+            { href: "/games/quiz", icon: "🏷️", label: "최저가 맞히기" },
+            { href: "/market", icon: "🛍️", label: "포인트 마켓" },
+            { href: "/rank", icon: "🏆", label: "헌터 랭킹" },
+          ].map((l) => (
+            <Link key={l.href} href={l.href} className="rounded-2xl bg-surface py-2.5 ring-1 ring-line active:scale-95">
+              <div className="text-2xl">{l.icon}</div>
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+      )}
+
       {!q && hotBounties.items.length > 0 && (
         <section className="mt-3">
           <div className="flex items-baseline justify-between px-4">

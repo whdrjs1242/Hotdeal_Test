@@ -107,15 +107,17 @@ export async function getSubmissions(bountyId: number) {
   return sql<(DealCard & { score: number })[]>`
     SELECT d.id, d.title, d.image_url, d.price, d.original_price, d.shipping, d.merchant, d.category, d.status,
            d.ends_at, d.votes_up, d.votes_down, d.comment_count, d.click_count, d.share_count, d.created_at,
-           d.user_id, u.nickname, u.xp AS user_xp, d.bounty_id, (d.votes_up - d.votes_down) AS score
+           d.user_id, u.nickname, u.xp AS user_xp, d.bounty_id,
+           (SELECT image FROM shop_items WHERE item_key = u.equip_character) AS user_char, (d.votes_up - d.votes_down) AS score
     FROM deals d JOIN users u ON u.id = d.user_id
     WHERE d.bounty_id = ${bountyId} AND d.status <> 'hidden'
     ORDER BY (d.votes_up - d.votes_down) DESC, d.price ASC NULLS LAST, d.id`;
 }
 
 export async function getBountyComments(bountyId: number) {
-  return sql<{ id: number; body: string; createdAt: string; userId: number; nickname: string; xp: number }[]>`
-    SELECT c.id, c.body, c.created_at, c.user_id, u.nickname, u.xp
+  return sql<{ id: number; body: string; createdAt: string; userId: number; nickname: string; xp: number; userChar: string | null }[]>`
+    SELECT c.id, c.body, c.created_at, c.user_id, u.nickname, u.xp,
+           (SELECT image FROM shop_items WHERE item_key = u.equip_character) AS user_char
     FROM bounty_comments c JOIN users u ON u.id = c.user_id
     WHERE c.bounty_id = ${bountyId} ORDER BY c.id LIMIT 300`;
 }

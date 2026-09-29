@@ -169,6 +169,24 @@ await sql`
   UPDATE users u SET points_available = COALESCE(s.a, 0), points_pending = COALESCE(s.p, 0)
   FROM (SELECT user_id, sum(delta) FILTER (WHERE status='available') a, sum(delta) FILTER (WHERE status='pending') p
         FROM points_ledger GROUP BY user_id) s WHERE s.user_id = u.id`;
+// 포인트 소모: 수배 현상금, 꾸미기 뽑기, 마켓 교환
+await sql`
+  INSERT INTO points_ledger (user_id, delta, kind, status, memo, created_at)
+  SELECT user_id, -stake, 'bounty_stake', 'available', '수배지 현상금', created_at FROM bounties`;
+await sql`
+  INSERT INTO points_ledger (user_id, delta, kind, status, memo, created_at)
+  SELECT id, -200, 'gacha', 'available', '꾸미기 뽑기', created_at + interval '2 days'
+  FROM users WHERE id % 4 = 0 AND created_at < now() - interval '2 days'`;
+await sql`
+  INSERT INTO orders (user_id, item_id, price_points, status, created_at, fulfilled_at)
+  SELECT u.id, i.id, i.price_points, CASE WHEN u.created_at > now() - interval '5 days' THEN 'requested' ELSE 'fulfilled' END,
+         u.created_at + interval '3 days', u.created_at + interval '4 days'
+  FROM users u JOIN LATERAL (SELECT id, price_points FROM shop_items WHERE kind = 'giftcard' AND u.id > 0 ORDER BY random() LIMIT 1) i ON true
+  WHERE u.id % 9 = 0 AND u.created_at < now() - interval '3 days'`;
+await sql`
+  INSERT INTO points_ledger (user_id, delta, kind, status, memo, created_at)
+  SELECT user_id, -price_points, 'market', 'available', '마켓 교환', created_at FROM orders WHERE contact_enc IS NULL`;
+
 await sql.unsafe(`UPDATE deals SET hot_score =
   (sign(votes_up - votes_down * 1.5 + click_count * 0.1 + share_count * 0.5 + comment_count * 0.3)
    * log(greatest(abs(votes_up - votes_down * 1.5 + click_count * 0.1 + share_count * 0.5 + comment_count * 0.3), 1))

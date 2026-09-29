@@ -6,7 +6,7 @@ const TABS = [
   { href: "/", label: "홈", icon: "🏠" },
   { href: "/bounties", label: "수배", icon: "🎯" },
   { href: "/new", label: "올리기", icon: "＋", primary: true },
-  { href: "/rank", label: "랭킹", icon: "🏆" },
+  { href: "/points", label: "포인트", icon: "🎁" },
   { href: "/me", label: "MY", icon: "🙂" },
 ];
 

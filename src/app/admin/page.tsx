@@ -11,7 +11,7 @@ import { BarList } from "@/components/dash/BarList";
 import { Funnel } from "@/components/dash/Funnel";
 import { Heatmap } from "@/components/dash/Heatmap";
 import { StatTile } from "@/components/dash/StatTile";
-import { AdminConversionUpload, AdminDealStatus, WithdrawalActions } from "@/components/Admin";
+import { AdminConversionUpload, AdminDealStatus, OrderActions, AddItemForm, ItemToggle } from "@/components/Admin";
 
 export const metadata = { title: "운영 대시보드" };
 
@@ -22,12 +22,21 @@ const NETWORK_LABEL: Record<string, string> = {
   amazon: "아마존",
   none: "일반 링크",
 };
+const SINK_LABEL: Record<string, string> = {
+  market: "마켓 교환",
+  gacha: "꾸미기 뽑기",
+  bounty_stake: "수배지 현상금",
+  bounty_fund: "현상금 올리기",
+  question: "질문 포인트",
+};
 const POINT_GROUPS: { label: string; kinds: string[] }[] = [
   { label: "헌터", kinds: ["hunter_reward", "post_reward"] },
   { label: "공유자", kinds: ["share_reward"] },
   { label: "수배자", kinds: ["bounty_reward"] },
   { label: "현상금 지급", kinds: ["bounty_prize"] },
   { label: "참여 활동", kinds: ["activity"] },
+  { label: "답변 채택", kinds: ["answer_reward"] },
+  { label: "게임", kinds: ["game"] },
   { label: "초대·가입", kinds: ["referral_reward", "signup_bonus", "checkin"] },
 ];
 
@@ -47,7 +56,9 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const rewardOut = pointsBy(["hunter_reward", "post_reward", "share_reward", "bounty_reward"]);
   const netRevenue = t.commission - rewardOut;
   const cvr = t.clicks ? (t.orders / t.clicks) * 100 : 0;
-  const pendingCashout = d.withdrawals.reduce((a, w) => a + w.amountKrw, 0);
+  const issued = d.points.reduce((a, x) => a + Math.max(0, x.pending + x.available), 0);
+  const spent = d.sinks.reduce((a, x) => a + x.spent, 0);
+  const marketSpent = d.sinks.find((x) => x.kind === "market")?.spent ?? 0;
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
@@ -202,23 +213,55 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </Card>
       </section>
 
+      <h2 className="mt-8 text-base font-bold">포인트 경제</h2>
+      <section className="mt-3 grid gap-4 lg:grid-cols-3">
+        <Card title="발행 vs 소모" sub={`최근 ${days}일 · 소모가 발행을 따라올수록 포인트 가치가 유지돼요`}>
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <Kv k="발행" v={`${compact(issued)}P`} />
+            <Kv k="소모" v={`${compact(spent)}P`} />
+            <Kv k="순발행" v={`${compact(issued - spent)}P`} />
+            <Kv k="마켓 교환 (원가 추정)" v={won(marketSpent)} />
+          </dl>
+          <div className="mt-4 h-2 overflow-hidden rounded-full" style={{ background: "var(--d-grid)" }}>
+            <div className="h-full rounded-r-[4px]" style={{ width: `${Math.min(100, issued ? (spent / issued) * 100 : 0)}%`, background: "var(--d-s1)" }} />
+          </div>
+          <p className="tnum mt-1 text-xs text-[var(--d-muted)]">소모율 {issued ? Math.round((spent / issued) * 100) : 0}%</p>
+        </Card>
+        <Card title="포인트 소모처">
+          <BarList items={d.sinks.map((x) => ({ label: SINK_LABEL[x.kind] ?? x.kind, value: x.spent }))} color="var(--d-s2)" unit="P" />
+        </Card>
+        <Card title="마켓 상품" sub="판매 수는 선택 기간 기준">
+          <ul className="divide-y divide-[var(--d-grid)] text-sm">
+            {d.items.map((i) => (
+              <li key={i.id} className="flex items-center gap-2 py-1.5">
+                <span className="min-w-0 flex-1 truncate">{i.name}</span>
+                <span className="tnum text-xs text-[var(--d-ink-2)]">
+                  {i.pricePoints?.toLocaleString()}P · {i.sold}건{i.stock != null ? ` · 재고 ${i.stock}` : ""}
+                </span>
+                <ItemToggle id={i.id} active={i.active} />
+              </li>
+            ))}
+          </ul>
+          <AddItemForm />
+        </Card>
+      </section>
+
       <h2 className="mt-8 text-base font-bold">운영</h2>
       <section className="mt-3 grid gap-4 lg:grid-cols-3">
-        <Card title={`현금화 신청 ${d.withdrawals.length}건`} sub={`송금 대기 ${won(pendingCashout)}`} className="lg:col-span-2">
-          {d.withdrawals.length === 0 ? (
-            <p className="py-6 text-center text-xs text-[var(--d-muted)]">대기 중인 신청이 없어요</p>
+        <Card title={`마켓 발송 대기 ${d.orders.length}건`} sub="상품권은 쿠폰번호, 실물은 송장번호를 입력하면 사용자에게 알림이 가요" className="lg:col-span-2">
+          {d.orders.length === 0 ? (
+            <p className="py-6 text-center text-xs text-[var(--d-muted)]">대기 중인 주문이 없어요</p>
           ) : (
             <ul className="divide-y divide-[var(--d-grid)] text-sm">
-              {d.withdrawals.map((w) => (
-                <li key={w.id} className="flex flex-wrap items-center gap-3 py-2.5">
+              {d.orders.map((o) => (
+                <li key={o.id} className="flex flex-wrap items-center gap-3 py-2.5">
                   <div className="min-w-40 flex-1">
-                    <b>{w.nickname}</b> <span className="text-xs text-[var(--d-muted)]">{timeAgo(w.createdAt)}</span>
+                    <b>{o.name}</b> <span className="text-xs text-[var(--d-muted)]">{timeAgo(o.createdAt)}</span>
                     <div className="tnum text-xs text-[var(--d-ink-2)]">
-                      {w.points.toLocaleString()}P → <b className="text-[var(--d-ink)]">{won(w.amountKrw)}</b> · {w.bankName} ****{w.accountLast4} ·{" "}
-                      {w.holderName}
+                      {o.nickname} · {o.pricePoints.toLocaleString()}P · {o.kind === "giftcard" ? "상품권" : "실물"}
                     </div>
                   </div>
-                  <WithdrawalActions id={w.id} />
+                  <OrderActions id={o.id} />
                 </li>
               ))}
             </ul>

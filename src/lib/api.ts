@@ -6,6 +6,9 @@ import { rateLimit } from "./cache";
 import { InvalidUrlError } from "./affiliate";
 import { BountyError } from "./bounties";
 import { InsufficientPointsError } from "./rewards";
+import { MarketError } from "./market";
+import { GameError } from "./games";
+import { QuestionError } from "./questions";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -48,7 +51,13 @@ export function handler<C>(fn: (req: NextRequest, ctx: C) => Promise<Response>) 
       return await fn(req, ctx);
     } catch (e) {
       if (e instanceof ApiError) return NextResponse.json({ error: e.message }, { status: e.status });
-      if (e instanceof BountyError || e instanceof InsufficientPointsError) {
+      if (
+        e instanceof BountyError ||
+        e instanceof InsufficientPointsError ||
+        e instanceof MarketError ||
+        e instanceof GameError ||
+        e instanceof QuestionError
+      ) {
         return NextResponse.json({ error: e.message }, { status: 400 });
       }
       if (e instanceof InvalidUrlError) return NextResponse.json({ error: e.message }, { status: 400 });

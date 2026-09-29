@@ -7,6 +7,8 @@ import { listDeals } from "@/lib/deals";
 import { levelOf } from "@/lib/levels";
 import { compact } from "@/lib/format";
 import { DealCard } from "@/components/DealCard";
+import { ProfileCard } from "@/components/ProfileCard";
+import { getLook } from "@/lib/cosmetics";
 
 type Props = { params: Promise<{ handle: string }> };
 
@@ -45,32 +47,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ChannelPage({ params }: Props) {
   const c = await loadCreator(decodeURIComponent((await params).handle));
   if (!c) notFound();
-  const deals = await listDeals({ sort: "new", userId: c.id, limit: 30 });
+  const [deals, look] = await Promise.all([listDeals({ sort: "new", userId: c.id, limit: 30 }), getLook(c.id)]);
   const lv = levelOf(c.xp);
   return (
     <div className="pt-safe min-h-dvh">
-      <header className="bg-gradient-to-b from-brand-soft to-canvas px-6 pb-6 pt-10 text-center">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-surface text-4xl shadow">
-          {c.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={c.avatarUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            lv.emoji
-          )}
-        </div>
-        <h1 className="mt-3 text-xl font-black">{c.nickname}</h1>
-        <p className="text-xs text-sub">
-          @{c.handle} · {lv.emoji} {lv.name}
+      <header className="px-3 pb-4 pt-6">
+        <ProfileCard
+          nickname={c.nickname}
+          xp={c.xp}
+          look={look}
+          avatarUrl={c.avatarUrl}
+          stats={[
+            { label: "올린 딜", value: c.dealCount },
+            { label: "받은 🔥", value: c.upvotes },
+            { label: "레벨", value: lv.level },
+            { label: "XP", value: c.xp },
+          ]}
+        />
+        <p className="mt-3 px-1 text-sm">
+          <span className="text-sub">@{c.handle}</span>
+          {c.bio && <span className="ml-2">{c.bio}</span>}
         </p>
-        {c.bio && <p className="mt-2 text-sm">{c.bio}</p>}
-        <div className="mt-3 flex justify-center gap-6 text-sm">
-          <span>
-            <b>{compact(c.dealCount)}</b> 딜
-          </span>
-          <span>
-            <b>{compact(c.upvotes)}</b> 🔥
-          </span>
-        </div>
       </header>
       <section className="divide-y divide-line">
         {deals.items.map((d) => (

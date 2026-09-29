@@ -5,7 +5,10 @@ import { sql } from "@/lib/db";
 import { env } from "@/lib/env";
 import { levelOf } from "@/lib/levels";
 import { compact, timeAgo, won } from "@/lib/format";
-import { CASHOUT, REWARD_POLICY } from "@/lib/rewards";
+import { REWARD_POLICY } from "@/lib/rewards";
+import { getLook } from "@/lib/cosmetics";
+import { decrypt } from "@/lib/crypto";
+import { ProfileCard } from "@/components/ProfileCard";
 import { listDeals } from "@/lib/deals";
 import { listBounties } from "@/lib/bounties";
 import { DealCard } from "@/components/DealCard";
@@ -14,7 +17,6 @@ import { CheckinButton } from "@/components/CheckinButton";
 import { CopyButton } from "@/components/CopyButton";
 import { ProfileForm } from "@/components/ProfileForm";
 import { LogoutButton } from "@/components/LogoutButton";
-import { CashoutForm } from "@/components/CashoutForm";
 
 export const metadata = { title: "MY" };
 
@@ -30,8 +32,13 @@ const KIND_LABEL: Record<string, string> = {
   bounty_stake: "🎯 수배지 현상금",
   bounty_fund: "💰 현상금 올리기",
   bounty_refund: "↩️ 수배 마감 환불",
-  withdraw: "💸 현금화 신청",
-  withdraw_refund: "↩️ 현금화 반려",
+  market: "🛍️ 마켓 교환",
+  market_refund: "↩️ 마켓 교환 취소",
+  game: "🎮 게임",
+  gacha: "🎰 꾸미기 뽑기",
+  question: "💬 질문 포인트",
+  question_refund: "↩️ 질문 환불",
+  answer_reward: "🏅 답변 채택",
   post_reward: "🕵️ 내가 찾은 딜 구매",
   admin: "지급",
 };
@@ -40,14 +47,14 @@ const KIND_LABEL: Record<string, string> = {
 const ROLE_KINDS = {
   hunter: ["hunter_reward", "bounty_prize", "post_reward"],
   poster: ["bounty_reward"],
-  participant: ["activity", "share_reward"],
+  participant: ["activity", "share_reward", "answer_reward", "game"],
 } as const;
 
 export default async function MePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/me");
 
-  const [[stats], ledger, myDeals, myBounties, [profile], byKind, withdrawals] = await Promise.all([
+  const [[stats], ledger, myDeals, myBounties, [profile], byKind, orders, look] = await Promise.all([
     sql<{ arrivals: number; invited: number; dealCount: number; upvotes: number; joined: number }[]>`
       SELECT
         (SELECT count(*)::int FROM share_arrivals WHERE sharer_id = ${user.id}) AS arrivals,
@@ -63,14 +70,16 @@ export default async function MePage() {
     sql<{ kind: string; total: number }[]>`
       SELECT kind, COALESCE(sum(delta), 0)::int AS total FROM points_ledger
       WHERE user_id = ${user.id} AND status <> 'canceled' AND delta > 0 GROUP BY kind`,
-    sql<{ id: number; points: number; amountKrw: number; status: string; createdAt: Date }[]>`
-      SELECT id, points, amount_krw, status, created_at FROM withdrawals WHERE user_id = ${user.id} ORDER BY id DESC LIMIT 5`,
+    sql<{ id: number; name: string; image: string | null; status: string; deliveryEnc: string | null; createdAt: Date }[]>`
+      SELECT o.id, i.name, i.image, o.status, o.delivery_enc, o.created_at FROM orders o JOIN shop_items i ON i.id = o.item_id
+      WHERE o.user_id = ${user.id} AND i.kind <> 'cosmetic' ORDER BY o.id DESC LIMIT 5`,
+    getLook(user.id),
   ]);
   const total = (kinds: readonly string[]) => byKind.filter((k) => kinds.includes(k.kind)).reduce((a, k) => a + k.total, 0);
   const roles = [
     { label: "헌터", emoji: "🕵️", value: total(ROLE_KINDS.hunter), hint: "찾은 상품 구매 · 현상금" },
     { label: "수배자", emoji: "🎯", value: total(ROLE_KINDS.poster), hint: "내 수배 상품 구매" },
-    { label: "참여자", emoji: "🙋", value: total(ROLE_KINDS.participant), hint: "참여 · 공유 · 평가" },
+    { label: "참여자", emoji: "🙋", value: total(ROLE_KINDS.participant), hint: "참여 · 답변 · 게임" },
   ];
   const lv = levelOf(user.xp);
   const inviteUrl = `${env.siteUrl}/?r=${user.refCode}`;
@@ -78,32 +87,31 @@ export default async function MePage() {
 
   return (
     <div className="pt-safe space-y-2 pb-6">
-      <section className="bg-surface px-4 pb-5 pt-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft text-3xl">{lv.emoji}</div>
-          <div className="flex-1">
-            <div className="text-lg font-black">{user.nickname}</div>
-            <div className="text-xs text-sub">
-              Lv.{lv.level} {lv.name} · {compact(user.xp)} XP
-            </div>
-          </div>
+      <section className="px-3 pt-4">
+        <ProfileCard
+          nickname={user.nickname}
+          xp={user.xp}
+          look={look}
+          avatarUrl={user.avatarUrl}
+          stats={[
+            { label: "올린 딜", value: stats.dealCount },
+            { label: "받은 🔥", value: stats.upvotes },
+            { label: "참여 수배", value: stats.joined },
+            { label: "공유 유입", value: stats.arrivals },
+          ]}
+        />
+        <div className="mt-2 flex gap-2">
+          <Link href="/me/closet" className="flex-1 rounded-xl bg-surface py-2.5 text-center text-sm font-bold ring-1 ring-line">
+            👕 꾸미기
+          </Link>
           <CheckinButton streak={profile.streakDays} />
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-canvas">
-          <div className="h-full rounded-full bg-brand" style={{ width: `${lv.progress * 100}%` }} />
-        </div>
-        {lv.next && (
-          <p className="mt-1 text-right text-[11px] text-sub">
-            {lv.next.emoji} {lv.next.name}까지 {compact(lv.next.min - user.xp)} XP
-          </p>
-        )}
       </section>
 
       <section className="mx-3 rounded-2xl bg-gradient-to-br from-ink to-[#2d3340] p-5 text-white">
         <div className="text-xs opacity-70">내 포인트</div>
         <div className="mt-1 flex items-baseline gap-2">
           <span className="text-3xl font-black">{user.pointsAvailable.toLocaleString()}P</span>
-          <span className="text-sm opacity-70">≈ {won(Math.floor(user.pointsAvailable * CASHOUT.rate))}</span>
         </div>
         <div className="mt-1 text-xs opacity-70">구매 확정 대기 {user.pointsPending.toLocaleString()}P</div>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -117,32 +125,37 @@ export default async function MePage() {
             </div>
           ))}
         </div>
-        <CashoutForm balance={user.pointsAvailable} min={CASHOUT.minPoints} rate={CASHOUT.rate} />
-        {withdrawals.length > 0 && (
-          <ul className="mt-3 space-y-1 text-xs opacity-80">
-            {withdrawals.map((w) => (
-              <li key={w.id} className="flex justify-between">
-                <span>
-                  {timeAgo(w.createdAt)} · {w.points.toLocaleString()}P → {won(w.amountKrw)}
-                </span>
-                <b>{w.status === "requested" ? "처리 중" : w.status === "paid" ? "입금 완료" : "반려"}</b>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Link href="/market" className="rounded-xl bg-white py-2.5 text-center text-sm font-bold text-ink">
+            🛍️ 포인트 마켓
+          </Link>
+          <Link href="/points" className="rounded-xl bg-white/15 py-2.5 text-center text-sm font-bold">
+            🎮 게임 · 버는 법
+          </Link>
+        </div>
+        {orders.length > 0 && (
+          <ul className="mt-4 space-y-1.5 text-xs">
+            <li className="opacity-70">교환 내역</li>
+            {orders.map((o) => (
+              <li key={o.id} className="flex items-center gap-2 rounded-lg bg-white/10 px-2.5 py-2">
+                <span>{o.image?.startsWith("http") ? "🎁" : o.image}</span>
+                <span className="min-w-0 flex-1 truncate">{o.name}</span>
+                {o.status === "fulfilled" && o.deliveryEnc ? (
+                  <b className="select-all">{decrypt(o.deliveryEnc)}</b>
+                ) : (
+                  <b>{o.status === "requested" ? "발송 준비 중" : o.status === "canceled" ? "취소(환불)" : "발송 완료"}</b>
+                )}
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <section className="mx-3 grid grid-cols-4 gap-2 rounded-2xl bg-surface p-3 text-center text-xs">
-        <Mini label="올린 딜" value={stats.dealCount} />
-        <Mini label="받은 🔥" value={stats.upvotes} />
-        <Mini label="참여 수배" value={stats.joined} />
-        <Mini label="공유 유입" value={stats.arrivals} />
-      </section>
 
       <section className="mx-3 rounded-2xl bg-surface p-4">
         <h2 className="font-bold">🤝 친구 초대</h2>
         <p className="mt-0.5 text-xs text-sub">
-          친구가 가입하면 가입 축하 포인트를 받고, 친구가 포인트를 모을 때마다 친구 몫의 {REWARD_POLICY.referralRate * 100}%를
+          친구가 가입하면 가입 축하 포인트를 받고, 친구가 구매 기여 포인트를 모을 때마다 친구 몫의 {REWARD_POLICY.referralRate * 100}%를
           줍줍이 내게 추가로 드려요. 지금까지 {stats.invited}명 초대!
         </p>
         <CopyButton text={inviteUrl} label="초대 링크 복사" />

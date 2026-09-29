@@ -5,7 +5,8 @@ import { merchantById } from "./affiliate/merchants";
 type Tx = postgres.TransactionSql | postgres.Sql;
 
 /**
- * 줍줍 포인트 정책 (1P 가치는 CASHOUT_RATE 로 원화 환산).
+ * 줍줍 포인트 정책. 포인트는 현금 출금 없이 플랫폼 안에서만 쓰인다
+ * (포인트 마켓 상품권·제휴 상품·꾸미기, 수배지·질문 현상금, 꾸미기 뽑기).
  *
  * ① 구매 기여 포인트 — 실제로 확정된 구매 수수료를 기여자에게 나눈다. 상한 없음.
  *    - 헌터(딜을 찾아 올린 사람):     수수료의 30%
@@ -23,6 +24,8 @@ export const REWARD_POLICY = {
 } as const;
 
 export const ACTIVITY_POINTS = {
+  post: 10, //       핫딜 공유 글 작성 — 딜당 1회
+  answer: 5, //      질문에 답변 — 질문당 1회
   join: 5, //        수배 참여 ("나도 찾아요") — 수배당 1회
   comment: 3, //     댓글
   vote: 2, //        딜/발견상품 평가 — 딜당 1회
@@ -40,11 +43,8 @@ export const BOUNTY_POLICY = {
 } as const;
 
 export const SIGNUP_BONUS = Number(process.env.SIGNUP_BONUS_POINTS ?? 1000);
-export const CASHOUT = {
-  /** 1P 당 원화 */
-  rate: Number(process.env.CASHOUT_RATE ?? 1),
-  minPoints: Number(process.env.CASHOUT_MIN_POINTS ?? 10000),
-};
+
+export const QUESTION_POLICY = { minReward: 50, days: 7 } as const;
 
 export type RewardKind = "hunter_reward" | "share_reward" | "bounty_reward";
 

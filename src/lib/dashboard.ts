@@ -31,7 +31,7 @@ export async function loadDashboard(days: RangeDays) {
   const fromTs = sql`((${from})::timestamp AT TIME ZONE 'Asia/Seoul')`;
   const since = sql`(((now() AT TIME ZONE 'Asia/Seoul')::date - ${days - 1}::int)::timestamp AT TIME ZONE 'Asia/Seoul')`;
 
-  const [daily, byNetwork, byCategory, topDeals, topSharers, heat, points, [live], reported, [funnel], withdrawals, hotBounties] = await Promise.all([
+  const [daily, byNetwork, byCategory, topDeals, topSharers, heat, points, [live], reported, [funnel], orders, hotBounties, sinks, items] = await Promise.all([
     sql<DailyRow[]>`
       WITH d AS (SELECT generate_series(${from}, (now() AT TIME ZONE 'Asia/Seoul')::date, interval '1 day')::date AS day)
       SELECT to_char(d.day, 'YYYY-MM-DD') AS day,
@@ -102,12 +102,20 @@ export async function loadDashboard(days: RangeDays) {
              count(*) FILTER (WHERE found_count > 0)::int AS found,
              count(*) FILTER (WHERE status = 'awarded')::int AS awarded
       FROM bounties WHERE created_at >= ${since}`,
-    sql<{ id: number; nickname: string; points: number; amountKrw: number; bankName: string; accountLast4: string; holderName: string; createdAt: Date }[]>`
-      SELECT w.id, u.nickname, w.points, w.amount_krw, w.bank_name, w.account_last4, w.holder_name, w.created_at
-      FROM withdrawals w JOIN users u ON u.id = w.user_id WHERE w.status = 'requested' ORDER BY w.id LIMIT 30`,
+    sql<{ id: number; nickname: string; name: string; kind: string; pricePoints: number; createdAt: Date }[]>`
+      SELECT o.id, u.nickname, i.name, i.kind, o.price_points, o.created_at
+      FROM orders o JOIN users u ON u.id = o.user_id JOIN shop_items i ON i.id = o.item_id
+      WHERE o.status = 'requested' ORDER BY o.id LIMIT 30`,
     sql<{ id: number; title: string; pot: number; participantCount: number; foundCount: number; status: string }[]>`
       SELECT id, title, pot, participant_count, found_count, status FROM bounties
       WHERE created_at >= ${since} ORDER BY participant_count DESC, pot DESC LIMIT 8`,
+    sql<{ kind: string; spent: number }[]>`
+      SELECT kind, (-sum(delta))::int AS spent FROM points_ledger
+      WHERE created_at >= ${since} AND delta < 0 AND status <> 'canceled' GROUP BY kind ORDER BY spent DESC`,
+    sql<{ id: number; kind: string; name: string; pricePoints: number | null; stock: number | null; active: boolean; sold: number }[]>`
+      SELECT i.id, i.kind, i.name, i.price_points, i.stock, i.active,
+             (SELECT count(*)::int FROM orders o WHERE o.item_id = i.id AND o.status <> 'canceled' AND o.created_at >= ${since}) AS sold
+      FROM shop_items i WHERE i.kind <> 'cosmetic' ORDER BY i.sort, i.id`,
   ]);
 
   const previous = daily.slice(0, daily.length - days);
@@ -135,8 +143,10 @@ export async function loadDashboard(days: RangeDays) {
     live,
     reported,
     funnel,
-    withdrawals,
+    orders,
     hotBounties,
+    sinks,
+    items,
   };
 }
 

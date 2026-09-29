@@ -81,6 +81,7 @@ export async function createDeal(userId: number, input: CreateDealInput) {
   after(async () => {
     if (link.monetized) await ensureAffiliateBase(link.canonicalUrl, link.network);
     await invalidate("feed:new:all:", `feed:new:${category}:`);
+    await grantActivity(userId, "post", String(deal.id), "핫딜 공유").catch(() => 0);
     if (input.bountyId) {
       await refreshBountyScore(input.bountyId);
       await grantActivity(userId, "hunt", String(input.bountyId), "수배 상품 발견").catch(() => {});

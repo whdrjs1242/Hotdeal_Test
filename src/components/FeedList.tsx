@@ -54,8 +54,8 @@ export function FeedList({
       {items.map((d, i) => (
         <DealCard key={d.id} deal={d} rank={initial.length + i} />
       ))}
-      <div ref={sentinel} className="py-6 text-center text-xs text-sub">
-        {loading ? "불러오는 중…" : cursor ? "" : initial.length + items.length > 0 ? "모든 딜을 봤어요 👀" : ""}
+      <div ref={sentinel} className="bg-canvas py-6 text-center text-[13px] text-muted">
+        {loading ? "불러오는 중" : cursor ? "" : initial.length + items.length > 0 ? "마지막 딜이에요" : ""}
       </div>
     </>
   );

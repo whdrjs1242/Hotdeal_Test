@@ -4,51 +4,43 @@ import { loadKoreanFont } from "@/lib/ogFont";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "줍줍 현상금 수배";
+export const alt = "줍줍 수배";
 
-/** 수배지 공유 카드 — 서부 현상금 포스터 */
+/** 수배 공유 이미지 — 무엇을, 얼마 이하로, 현상금 얼마 */
 export default async function OgImage({ params }: { params: Promise<{ id: string }> }) {
   const b = await getBounty(Number((await params).id));
-  const title = b?.title ?? "현상금 수배";
-  const pot = `${(b?.pot ?? 0).toLocaleString("ko-KR")}P`;
-  const target = b?.targetPrice ? `${b.targetPrice.toLocaleString("ko-KR")}원 이하로 찾습니다` : "최저가를 찾습니다";
+  const title = b?.title ?? "수배";
+  const target = b?.targetPrice ? `${b.targetPrice.toLocaleString("ko-KR")}원 이하로 찾아요` : "가장 싼 곳을 찾아요";
+  const pot = `현상금 ${(b?.pot ?? 0).toLocaleString("ko-KR")}P`;
   const people = `${(b?.participantCount ?? 0).toLocaleString("ko-KR")}명이 함께 찾는 중`;
-  const font = await loadKoreanFont(`${title}${pot}${target}${people}WANTEDREWARD줍줍현상금수배찾으면포인트!`);
+  const font = await loadKoreanFont(`${title}${target}${pot}${people}줍줍수배찾아서올리면현상금을받아요`);
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          background: "#fbf1dc",
-          color: "#3b2a1a",
-          fontFamily: "NotoKR",
-          padding: 40,
-        }}
-      >
-        <div style={{ flex: 1, display: "flex", border: "6px solid #3b2a1a", borderRadius: 16, padding: 36, alignItems: "center", gap: 40 }}>
-          <div style={{ width: 400, height: 400, display: "flex", borderRadius: 16, overflow: "hidden", background: "#eadcbd", alignItems: "center", justifyContent: "center" }}>
-            {b?.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={b.imageUrl} width={400} height={400} style={{ objectFit: "cover" }} alt="" />
-            ) : (
-              <div style={{ fontSize: 160 }}>🎯</div>
-            )}
+      <div style={{ width: "100%", height: "100%", display: "flex", background: "#ffffff", fontFamily: "Kr", padding: 64 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ fontSize: 40, fontWeight: 800, color: "#ff5b2e" }}>줍줍</div>
+            <div style={{ display: "flex", fontSize: 26, color: "#ff5b2e", background: "#fff1ec", padding: "6px 16px", borderRadius: 10 }}>수배</div>
           </div>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", fontSize: 72, fontWeight: 800, color: "#c2410c", letterSpacing: 8 }}>WANTED</div>
-            <div style={{ display: "flex", fontSize: 44, fontWeight: 800, marginTop: 12, lineHeight: 1.25 }}>
-              {title.length > 30 ? title.slice(0, 30) + "…" : title}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", fontSize: 58, fontWeight: 800, color: "#191f28", lineHeight: 1.3 }}>
+              {title.length > 28 ? title.slice(0, 28) + "…" : title}
             </div>
-            <div style={{ display: "flex", fontSize: 28, marginTop: 12 }}>{target}</div>
-            <div style={{ display: "flex", fontSize: 24, marginTop: 28, opacity: 0.7 }}>REWARD</div>
-            <div style={{ display: "flex", fontSize: 84, fontWeight: 800 }}>{pot}</div>
-            <div style={{ display: "flex", fontSize: 26, marginTop: 8 }}>{`🙋 ${people} · 줍줍`}</div>
+            <div style={{ display: "flex", fontSize: 34, color: "#4e5968", marginTop: 16 }}>{target}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 24 }}>
+            <div style={{ fontSize: 56, fontWeight: 800, color: "#ff5b2e" }}>{pot}</div>
+            <div style={{ fontSize: 30, color: "#8b95a1" }}>{people}</div>
           </div>
         </div>
+        {b?.imageUrl && (
+          <div style={{ width: 360, height: 360, display: "flex", alignSelf: "center", borderRadius: 24, overflow: "hidden", background: "#f2f4f6", marginLeft: 40 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={b.imageUrl} width={360} height={360} style={{ objectFit: "cover" }} alt="" />
+          </div>
+        )}
       </div>
     ),
-    { ...size, fonts: font ? [{ name: "NotoKR", data: font, weight: 800, style: "normal" }] : undefined, emoji: "twemoji" },
+    { ...size, fonts: font ? [{ name: "Kr", data: font, weight: 800, style: "normal" }] : undefined },
   );
 }

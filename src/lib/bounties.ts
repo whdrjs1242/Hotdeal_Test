@@ -204,11 +204,11 @@ export async function awardBounty(bountyId: number, dealId: number) {
     await tx`UPDATE bounties SET status = 'awarded', awarded_deal_id = ${dealId}, updated_at = now() WHERE id = ${bountyId}`;
     await tx`
       INSERT INTO notifications (user_id, deal_id, kind, title, body)
-      VALUES (${d.userId}, ${dealId}, 'reward', ${`🏆 현상금 ${prize.toLocaleString()}P 획득!`}, ${b.title})`;
+      VALUES (${d.userId}, ${dealId}, 'reward', ${`현상금 ${prize.toLocaleString()}P를 받았어요`}, ${b.title})`;
     return { hunterId: d.userId, prize, title: b.title };
   });
   await pushToUsers([result.hunterId], {
-    title: `🏆 현상금 ${result.prize.toLocaleString()}P 획득!`,
+    title: `현상금 ${result.prize.toLocaleString()}P를 받았어요`,
     body: result.title,
     url: `${env.siteUrl}/bounties/${bountyId}`,
   }).catch(() => {});
@@ -264,9 +264,9 @@ export async function notifyBountyFound(bountyId: number, dealId: number, hunter
     UNION SELECT user_id FROM bounty_participants WHERE bounty_id = ${bountyId}`;
   const ids = watchers.map((w) => w.userId).filter((id) => id !== hunterId);
   if (!ids.length) return;
-  const title = `🎯 '${b.title}' 발견!${price ? ` ${price.toLocaleString("ko-KR")}원` : ""}`;
+  const title = `'${b.title}' 수배 상품이 올라왔어요${price ? ` · ${price.toLocaleString("ko-KR")}원` : ""}`;
   await sql`
     INSERT INTO notifications (user_id, deal_id, kind, title, body)
-    SELECT unnest(${ids}::bigint[]), ${dealId}, 'bounty_found', ${title}, '헌터가 수배 상품을 찾았어요. 평가하고 확인해보세요'`;
-  await pushToUsers(ids, { title, body: "헌터가 수배 상품을 찾았어요", url: `${env.siteUrl}/bounties/${bountyId}`, tag: `bounty-${bountyId}` });
+    SELECT unnest(${ids}::bigint[]), ${dealId}, 'bounty_found', ${title}, '찾은 상품을 확인하고 평가해주세요'`;
+  await pushToUsers(ids, { title, body: "찾은 상품을 확인하고 평가해주세요", url: `${env.siteUrl}/bounties/${bountyId}`, tag: `bounty-${bountyId}` });
 }

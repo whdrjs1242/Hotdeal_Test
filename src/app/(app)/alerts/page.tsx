@@ -5,21 +5,24 @@ import { timeAgo } from "@/lib/format";
 import { AlertManager } from "@/components/AlertManager";
 import { PushToggle } from "@/components/PushToggle";
 import { MarkRead } from "@/components/MarkRead";
+import { TopBar, Empty, buttonClass } from "@/components/ui";
 
-export const metadata = { title: "줍줍 알림" };
+export const metadata = { title: "알림" };
 
 export default async function AlertsPage() {
   const user = await getCurrentUser();
   if (!user) {
     return (
-      <div className="px-6 pt-24 text-center">
-        <div className="text-5xl">🔔</div>
-        <h1 className="mt-4 text-xl font-black">원하는 상품이 싸지면 바로 알려드려요</h1>
-        <p className="mt-2 text-sm text-sub">‘에어팟 20만원 이하’처럼 키워드와 목표가만 정해두세요.</p>
-        <Link href="/login?next=/alerts" className="mt-6 inline-block rounded-xl bg-brand px-6 py-3 font-bold text-white">
-          알림 설정하기
-        </Link>
-      </div>
+      <>
+        <TopBar title="알림" />
+        <div className="bg-surface px-6 py-16 text-center">
+          <p className="text-[17px] font-bold">원하는 상품이 싸지면 바로 알려드려요</p>
+          <p className="mt-1 text-[14px] text-sub">예를 들어 ‘에어팟, 20만원 이하’처럼 정해둘 수 있어요.</p>
+          <Link href="/login?next=/alerts" className={`${buttonClass("primary", "md")} mt-6`}>
+            로그인하고 알림 설정하기
+          </Link>
+        </div>
+      </>
     );
   }
   const [alerts, notifications] = await Promise.all([
@@ -30,26 +33,33 @@ export default async function AlertsPage() {
   ]);
   const unread = notifications.some((n) => !n.readAt);
   return (
-    <div className="pt-safe">
-      <h1 className="px-4 pt-4 text-xl font-black">줍줍 알림</h1>
-      <div className="mt-3 space-y-2 px-3">
-        <PushToggle vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""} />
-        <AlertManager initial={alerts} />
-      </div>
-      <h2 className="mt-6 px-4 font-bold">받은 알림</h2>
+    <>
+      <TopBar title="알림" />
       {unread && <MarkRead />}
-      <ul className="mt-2 divide-y divide-line bg-surface">
-        {notifications.map((n) => (
-          <li key={n.id}>
-            <Link href={n.dealId ? `/deals/${n.dealId}` : "#"} className={`block px-4 py-3 ${n.readAt ? "opacity-60" : ""}`}>
-              <div className="text-sm font-semibold">{n.title}</div>
-              {n.body && <div className="mt-0.5 line-clamp-1 text-sm text-sub">{n.body}</div>}
-              <div className="mt-1 text-xs text-sub">{timeAgo(n.createdAt)}</div>
-            </Link>
-          </li>
-        ))}
-        {notifications.length === 0 && <li className="px-4 py-10 text-center text-sm text-sub">아직 받은 알림이 없어요</li>}
-      </ul>
-    </div>
+      <div className="space-y-2">
+        <section className="bg-surface px-5 py-5">
+          <PushToggle vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""} />
+          <AlertManager initial={alerts} />
+        </section>
+        <section className="bg-surface">
+          <h2 className="px-5 pt-5 text-[17px] font-bold">받은 알림</h2>
+          <ul className="divide-y divide-line">
+            {notifications.map((n) => (
+              <li key={n.id}>
+                <Link href={n.dealId ? `/deals/${n.dealId}` : "#"} className="flex gap-3 px-5 py-4">
+                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.readAt ? "bg-transparent" : "bg-brand"}`} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-semibold leading-snug">{n.title.replace(/^[^\p{L}\p{N}]+/u, "")}</span>
+                    {n.body && <span className="mt-0.5 line-clamp-1 block text-[14px] text-sub">{n.body}</span>}
+                    <span className="mt-1 block text-[12px] text-muted">{timeAgo(n.createdAt)}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+            {notifications.length === 0 && <Empty title="받은 알림이 없어요" desc="관심 키워드를 등록하면 새 딜이 올라올 때 알려드려요" />}
+          </ul>
+        </section>
+      </div>
+    </>
   );
 }

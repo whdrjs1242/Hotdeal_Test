@@ -41,8 +41,8 @@ export function BountyFeed({ initialCursor, query, children }: { initialCursor: 
       {items.map((b) => (
         <BountyCard key={b.id} bounty={b} />
       ))}
-      <div ref={sentinel} className="py-4 text-center text-xs text-sub">
-        {loading ? "불러오는 중…" : ""}
+      <div ref={sentinel} className="bg-canvas py-5 text-center text-[13px] text-muted">
+        {loading ? "불러오는 중" : ""}
       </div>
     </>
   );

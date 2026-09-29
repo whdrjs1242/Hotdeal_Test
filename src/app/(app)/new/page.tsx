@@ -1,39 +1,56 @@
 import Link from "next/link";
-import { BOUNTY_POLICY, QUESTION_POLICY, ACTIVITY_POINTS } from "@/lib/rewards";
+import { ACTIVITY_POINTS, BOUNTY_POLICY, QUESTION_POLICY } from "@/lib/rewards";
+import { Icon } from "@/components/Icon";
 
-export const metadata = { title: "올리기" };
+export const metadata = { title: "글쓰기" };
+
+const OPTIONS = [
+  {
+    href: "/submit",
+    icon: "trend",
+    title: "핫딜 공유",
+    desc: "싸게 파는 곳을 알려주세요. 링크만 붙여넣으면 상품 정보가 채워져요.",
+    meta: `작성 ${ACTIVITY_POINTS.post}P · 구매 발생 시 추가 포인트`,
+  },
+  {
+    href: "/bounties/new",
+    icon: "target",
+    title: "수배 요청",
+    desc: "사고 싶은 상품과 목표가를 적으면 다른 사람들이 대신 찾아줘요.",
+    meta: `현상금 ${BOUNTY_POLICY.minStake}P부터`,
+  },
+  {
+    href: "/questions/new",
+    icon: "question",
+    title: "쇼핑 질문",
+    desc: "이 가격이면 사도 되는지, 더 나은 대안이 있는지 물어보세요.",
+    meta: `${QUESTION_POLICY.minReward}P부터 · 채택한 답변자에게 지급`,
+  },
+];
 
 export default function NewPage() {
   return (
-    <div className="pt-safe px-4">
-      <h1 className="pt-6 text-xl font-black">무엇을 할까요?</h1>
-      <div className="mt-5 space-y-3">
-        <Link href="/submit" className="block rounded-3xl bg-surface p-5 ring-1 ring-line active:scale-[0.99]">
-          <div className="text-3xl">🔥</div>
-          <div className="mt-2 text-lg font-black">핫딜 공유하기</div>
-          <p className="mt-1 text-sm text-sub">
-            싸게 파는 걸 발견했나요? 링크만 붙여넣으면 끝. 글 작성 +{ACTIVITY_POINTS.post}P, 내가 올린 딜로 구매가 일어날 때마다 포인트가 쌓여요.
-          </p>
-        </Link>
-        <Link
-          href="/bounties/new"
-          className="block rounded-3xl bg-gradient-to-br from-[#2b2118] to-[#4a3526] p-5 text-[#fbe9c9] active:scale-[0.99]"
-        >
-          <div className="text-3xl">🎯</div>
-          <div className="mt-2 text-lg font-black">수배지 걸기</div>
-          <p className="mt-1 text-sm opacity-80">
-            사고 싶은 상품과 목표가를 걸면 헌터들이 대신 찾아와요. 수배가 인기를 끌어 구매자가 늘수록 나도 포인트를 받아요.
-            (최소 {BOUNTY_POLICY.minStake}P)
-          </p>
-        </Link>
-        <Link href="/questions/new" className="block rounded-3xl bg-surface p-5 ring-1 ring-line active:scale-[0.99]">
-          <div className="text-3xl">💬</div>
-          <div className="mt-2 text-lg font-black">살까 말까? 질문하기</div>
-          <p className="mt-1 text-sm text-sub">
-            포인트를 걸고 쇼핑 고민을 물어보세요. 채택한 답변자가 포인트를 받아요. (최소 {QUESTION_POLICY.minReward}P)
-          </p>
-        </Link>
-      </div>
+    <div className="pt-safe">
+      <header className="bg-surface px-5 pb-2 pt-6">
+        <h1 className="text-[22px] font-bold">무엇을 올릴까요?</h1>
+      </header>
+      <ul className="divide-y divide-line bg-surface">
+        {OPTIONS.map((o) => (
+          <li key={o.href}>
+            <Link href={o.href} className="flex items-start gap-4 px-5 py-5 active:bg-fill">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fill text-sub">
+                <Icon name={o.icon} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[16px] font-semibold">{o.title}</span>
+                <span className="mt-0.5 block text-[14px] leading-snug text-sub">{o.desc}</span>
+                <span className="mt-1.5 block text-[12px] text-muted">{o.meta}</span>
+              </span>
+              <Icon name="chevron" size={18} className="mt-3 text-muted" />
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -23,12 +23,12 @@ export const createQuestionSchema = z.object({
   reward: z.coerce.number().int().min(QUESTION_POLICY.minReward).max(100_000),
 });
 
-export async function listQuestions(status: "open" | "answered" | "all" = "all", limit = 30) {
+export async function listQuestions(status: "open" | "answered" | "all" = "all", limit = 30, userId?: number) {
   return sql<QuestionCard[]>`
     SELECT q.id, q.title, q.reward, q.status, q.answer_count, q.created_at, q.expires_at, q.user_id, u.nickname,
            (SELECT image FROM shop_items WHERE item_key = u.equip_character) AS user_char
     FROM questions q JOIN users u ON u.id = q.user_id
-    WHERE ${status === "all" ? sql`q.status <> 'closed' OR q.answer_count > 0` : sql`q.status = ${status}`}
+    WHERE ${userId ? sql`q.user_id = ${userId}` : status === "all" ? sql`q.status <> 'closed' OR q.answer_count > 0` : sql`q.status = ${status}`}
     ORDER BY (q.status = 'open') DESC, q.id DESC LIMIT ${limit}`;
 }
 
@@ -71,7 +71,7 @@ export async function addAnswer(questionId: number, userId: number, body: string
     await tx`UPDATE questions SET answer_count = answer_count + 1 WHERE id = ${questionId}`;
     await tx`
       INSERT INTO notifications (user_id, kind, title, body)
-      VALUES (${q.userId}, 'answer', ${`💬 '${q.title}'에 답변이 달렸어요`}, ${body.slice(0, 80)})`;
+      VALUES (${q.userId}, 'answer', ${`'${q.title}'에 답변이 달렸어요`}, ${body.slice(0, 80)})`;
     return a.id;
   });
 }
@@ -100,7 +100,7 @@ export async function acceptAnswer(questionId: number, answerId: number, byUserI
     await tx`UPDATE questions SET status = 'answered', accepted_answer_id = ${answerId} WHERE id = ${questionId}`;
     await tx`
       INSERT INTO notifications (user_id, kind, title, body)
-      VALUES (${a.userId}, 'reward', ${`🏅 답변 채택! +${q.reward.toLocaleString()}P`}, ${q.title})`;
+      VALUES (${a.userId}, 'reward', ${`답변이 채택됐어요 · +${q.reward.toLocaleString()}P`}, ${q.title})`;
     return q.reward;
   });
 }

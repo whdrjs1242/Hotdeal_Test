@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { timeAgo } from "@/lib/format";
+import { Icon } from "./Icon";
+import { Badge } from "./ui";
 
 interface A {
   id: number;
@@ -33,7 +35,7 @@ export function Answers({
   const router = useRouter();
   const [body, setBody] = useState("");
   const [items, setItems] = useState(initial);
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,16 +45,16 @@ export function Answers({
       body: JSON.stringify({ body }),
     });
     const d = await res.json();
-    if (!res.ok) return setMsg(d.error);
+    if (!res.ok) return setMsg({ ok: false, text: d.error });
     setBody("");
-    setMsg(d.points ? `답변 등록! +${d.points}P` : "답변 등록!");
+    setMsg({ ok: true, text: d.points ? `답변을 등록했어요 · ${d.points}P 적립` : "답변을 등록했어요" });
     router.refresh();
   }
   async function vote(id: number) {
     if (!loggedIn) return router.push(`/login?next=/questions/${questionId}`);
     const res = await fetch(`/api/answers/${id}/vote`, { method: "POST" });
     const d = await res.json();
-    if (!res.ok) return setMsg(d.error);
+    if (!res.ok) return setMsg({ ok: false, text: d.error });
     setItems((p) => p.map((a) => (a.id === id ? { ...a, votesUp: d.votesUp } : a)));
   }
   async function accept(id: number) {
@@ -63,48 +65,60 @@ export function Answers({
       body: JSON.stringify({ answerId: id }),
     });
     const d = await res.json();
-    if (!res.ok) return setMsg(d.error);
+    if (!res.ok) return setMsg({ ok: false, text: d.error });
     router.refresh();
   }
 
   const list = [...items].sort((a, b) => Number(b.id === acceptedId) - Number(a.id === acceptedId));
   return (
-    <section className="mt-2 space-y-2 px-3">
-      <h2 className="px-1 pt-2 font-black">답변 {items.length}</h2>
-      {list.map((a) => (
-        <div key={a.id} className={`rounded-2xl bg-surface p-4 ring-1 ${a.id === acceptedId ? "ring-2 ring-[#1c7c3a]" : "ring-line"}`}>
-          {a.id === acceptedId && <div className="mb-1 text-xs font-black text-[#1c7c3a] dark:text-[#6ee7a0]">🏅 채택된 답변</div>}
-          <div className="text-xs text-sub">
-            {a.userChar ?? "🙂"} <b className="text-ink/80">{a.nickname}</b> · {timeAgo(a.createdAt)}
-          </div>
-          <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed">{a.body}</p>
-          <div className="mt-2 flex gap-2">
-            <button onClick={() => vote(a.id)} disabled={a.userId === myId} className="rounded-lg bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand disabled:opacity-50">
-              👍 도움돼요 {a.votesUp}
-            </button>
-            {isOwner && open && (
-              <button onClick={() => accept(a.id)} className="rounded-lg bg-ink px-3 py-1.5 text-xs font-bold text-surface">
-                채택하기
+    <section className="mt-2 bg-surface px-5 py-5">
+      <h2 className="text-[17px] font-bold">
+        답변 <span className="text-muted">{items.length}</span>
+      </h2>
+      <ul className="divide-y divide-line">
+        {list.map((a) => (
+          <li key={a.id} className="py-4">
+            <div className="flex items-center gap-1.5 text-[13px] text-muted">
+              {a.id === acceptedId && <Badge tone="positive">채택된 답변</Badge>}
+              <b className="font-semibold text-sub">{a.nickname}</b>· {timeAgo(a.createdAt)}
+            </div>
+            <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed">{a.body}</p>
+            <div className="mt-2 flex gap-1.5">
+              <button onClick={() => vote(a.id)} disabled={a.userId === myId} className="press flex h-8 items-center gap-1 rounded-lg bg-fill px-2.5 text-[13px] font-semibold disabled:text-muted">
+                <Icon name="thumbUp" size={15} /> 도움돼요 {a.votesUp}
               </button>
-            )}
-          </div>
-        </div>
-      ))}
-      {open && !isOwner && (
-        loggedIn ? (
-          <form onSubmit={submit} className="space-y-2 rounded-2xl bg-surface p-3 ring-1 ring-line">
-            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={2000} placeholder="경험·가격 비교·대안 상품 링크 등 도움이 되는 답변을 남겨주세요" className="w-full rounded-xl bg-canvas p-3 text-sm outline-none" />
-            <button disabled={body.trim().length < 2} className="h-10 w-full rounded-xl bg-ink text-sm font-bold text-surface disabled:opacity-40">
-              답변하기
+              {isOwner && open && (
+                <button onClick={() => accept(a.id)} className="press h-8 rounded-lg bg-brand px-3 text-[13px] font-semibold text-white">
+                  채택하기
+                </button>
+              )}
+            </div>
+          </li>
+        ))}
+        {items.length === 0 && <li className="py-6 text-[14px] text-muted">첫 답변을 남겨주세요.</li>}
+      </ul>
+      {open &&
+        !isOwner &&
+        (loggedIn ? (
+          <form onSubmit={submit} className="mt-2 space-y-2">
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={3}
+              maxLength={2000}
+              placeholder="경험, 가격 비교, 대안 상품 링크 등을 알려주세요"
+              className="w-full rounded-xl bg-fill px-4 py-3 text-[15px] outline-none placeholder:text-muted"
+            />
+            <button disabled={body.trim().length < 2} className="press h-12 w-full rounded-xl bg-ink text-[15px] font-semibold text-surface disabled:opacity-30">
+              답변 등록
             </button>
           </form>
         ) : (
-          <a href={`/login?next=/questions/${questionId}`} className="block rounded-2xl bg-surface py-4 text-center text-sm text-sub ring-1 ring-line">
+          <a href={`/login?next=/questions/${questionId}`} className="mt-2 block rounded-xl bg-fill py-3 text-center text-[14px] text-sub">
             로그인하고 답변하기
           </a>
-        )
-      )}
-      {msg && <p className="px-1 text-sm font-semibold">{msg}</p>}
+        ))}
+      {msg && <p className={`mt-2 text-[13px] ${msg.ok ? "text-positive" : "text-negative"}`}>{msg.text}</p>}
     </section>
   );
 }

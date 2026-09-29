@@ -19,21 +19,25 @@ export function Comments({
   loggedIn,
   endpoint,
   nextPath,
+  placeholder = "쿠폰·카드 할인 같은 정보를 알려주세요",
 }: {
   dealId: number;
   initial: C[];
   loggedIn: boolean;
   endpoint?: string;
   nextPath?: string;
+  placeholder?: string;
 }) {
   const [items, setItems] = useState(initial);
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!body.trim()) return;
     setBusy(true);
+    setErr("");
     const res = await fetch(endpoint ?? `/api/deals/${dealId}/comments`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -41,43 +45,53 @@ export function Comments({
     });
     setBusy(false);
     const data = await res.json();
-    if (!res.ok) return alert(data.error);
+    if (!res.ok) return setErr(data.error);
     setItems((prev) => [...prev, data]);
     setBody("");
   }
 
   return (
-    <section className="bg-surface px-4 py-4">
-      <h2 className="font-bold">댓글 {items.length}</h2>
-      <ul className="mt-3 space-y-3">
-        {items.map((c) => (
-          <li key={c.id} className="text-sm">
-            <div className="text-xs text-sub">
-              {c.userChar ?? levelOf(c.xp).emoji} <b className="text-ink/80">{c.nickname}</b> · {timeAgo(c.createdAt)}
-            </div>
-            <p className="mt-0.5 whitespace-pre-wrap break-words">{c.body}</p>
-          </li>
-        ))}
-        {items.length === 0 && <li className="text-sm text-sub">첫 댓글로 딜 정보를 더해주세요 (쿠폰, 카드할인 등)</li>}
+    <section className="bg-surface px-5 py-5">
+      <h2 className="text-[17px] font-bold">
+        댓글 <span className="text-muted">{items.length}</span>
+      </h2>
+      <ul className="mt-2 divide-y divide-line">
+        {items.map((c) => {
+          const lv = levelOf(c.xp);
+          return (
+            <li key={c.id} className="py-3">
+              <p className="text-[13px] text-muted">
+                <b className="font-semibold text-sub">
+                  {c.userChar ? `${c.userChar} ` : ""}
+                  {c.nickname}
+                </b>{" "}
+                · Lv.{lv.level} · {timeAgo(c.createdAt)}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-relaxed">{c.body}</p>
+            </li>
+          );
+        })}
+        {items.length === 0 && <li className="py-4 text-[14px] text-muted">아직 댓글이 없어요.</li>}
       </ul>
       {loggedIn ? (
-        <form onSubmit={submit} className="mt-4 flex gap-2">
+        <form onSubmit={submit} className="mt-3 flex gap-2">
           <input
             value={body}
             onChange={(e) => setBody(e.target.value)}
             maxLength={500}
-            placeholder="꿀팁 공유하기 (카드할인, 쿠폰 등)"
-            className="h-11 flex-1 rounded-xl bg-canvas px-3 text-sm outline-none"
+            placeholder={placeholder}
+            className="h-11 flex-1 rounded-xl bg-fill px-3.5 text-[15px] outline-none placeholder:text-muted"
           />
-          <button disabled={busy} className="h-11 rounded-xl bg-ink px-4 text-sm font-bold text-surface disabled:opacity-50">
+          <button disabled={busy || !body.trim()} className="press h-11 rounded-xl bg-ink px-4 text-[15px] font-semibold text-surface disabled:opacity-30">
             등록
           </button>
         </form>
       ) : (
-        <Link href={`/login?next=${nextPath ?? `/deals/${dealId}`}`} className="mt-4 block rounded-xl bg-canvas py-3 text-center text-sm text-sub">
-          로그인하고 댓글 남기기
+        <Link href={`/login?next=${nextPath ?? `/deals/${dealId}`}`} className="mt-3 block rounded-xl bg-fill py-3 text-center text-[14px] text-sub">
+          로그인하고 댓글 쓰기
         </Link>
       )}
+      {err && <p className="mt-2 text-[13px] text-negative">{err}</p>}
     </section>
   );
 }

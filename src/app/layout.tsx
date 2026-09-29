@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),
-  title: { default: "줍줍 — 현상금 걸면 헌터가 최저가를 찾아온다", template: "%s · 줍줍" },
+  title: { default: "줍줍 — 핫딜 공유와 최저가 수배", template: "%s · 줍줍" },
   description: "원하는 상품에 현상금을 걸면 헌터들이 최저가를 찾아와요. 수배자·참여자·헌터 모두 포인트를 버는 핫딜 앱",
   applicationName: "줍줍",
   appleWebApp: { capable: true, title: "줍줍", statusBarStyle: "default" },
@@ -19,8 +19,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fff8f1" },
-    { media: "(prefers-color-scheme: dark)", color: "#14111a" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#1b1c21" },
   ],
 };
 
@@ -28,9 +28,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap" />
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"

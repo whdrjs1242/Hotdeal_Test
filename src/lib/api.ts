@@ -9,7 +9,7 @@ import { InsufficientPointsError } from "./rewards";
 import { MarketError } from "./market";
 import { GameError } from "./games";
 import { QuestionError } from "./questions";
-import { CasinoError } from "./casino";
+import { PlayError } from "./play";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -58,7 +58,7 @@ export function handler<C>(fn: (req: NextRequest, ctx: C) => Promise<Response>) 
         e instanceof MarketError ||
         e instanceof GameError ||
         e instanceof QuestionError ||
-        e instanceof CasinoError
+        e instanceof PlayError
       ) {
         return NextResponse.json({ error: e.message }, { status: 400 });
       }

@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { SubmitForm } from "@/components/SubmitForm";
+import { TopBar } from "@/components/ui";
 
-export const metadata = { title: "핫딜 올리기" };
+export const metadata = { title: "핫딜 공유" };
 
 type SP = Promise<{ url?: string; text?: string; title?: string }>;
 
@@ -16,10 +17,9 @@ export default async function SubmitPage({ searchParams }: { searchParams: SP })
     redirect(`/login?next=${encodeURIComponent(next)}`);
   }
   return (
-    <div className="px-4 pt-safe">
-      <h1 className="pt-4 text-xl font-black">핫딜 올리기</h1>
-      <p className="mt-1 text-sm text-sub">쇼핑몰 링크만 붙여넣으면 상품 정보를 자동으로 채워드려요.</p>
+    <>
+      <TopBar title="핫딜 공유" />
       <SubmitForm initialUrl={shared} />
-    </div>
+    </>
   );
 }

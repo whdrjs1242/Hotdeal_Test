@@ -7,6 +7,7 @@ import { listDeals } from "@/lib/deals";
 import { levelOf } from "@/lib/levels";
 import { compact } from "@/lib/format";
 import { DealCard } from "@/components/DealCard";
+import { Empty } from "@/components/ui";
 import { ProfileCard } from "@/components/ProfileCard";
 import { getLook } from "@/lib/cosmetics";
 
@@ -51,7 +52,7 @@ export default async function ChannelPage({ params }: Props) {
   const lv = levelOf(c.xp);
   return (
     <div className="pt-safe min-h-dvh">
-      <header className="px-3 pb-4 pt-6">
+      <header className="bg-surface px-5 pb-5 pt-8">
         <ProfileCard
           nickname={c.nickname}
           xp={c.xp}
@@ -59,27 +60,28 @@ export default async function ChannelPage({ params }: Props) {
           avatarUrl={c.avatarUrl}
           stats={[
             { label: "올린 딜", value: c.dealCount },
-            { label: "받은 🔥", value: c.upvotes },
+            { label: "받은 추천", value: c.upvotes },
             { label: "레벨", value: lv.level },
-            { label: "XP", value: c.xp },
+            { label: "경험치", value: c.xp },
           ]}
         />
-        <p className="mt-3 px-1 text-sm">
-          <span className="text-sub">@{c.handle}</span>
+        <p className="mt-3 text-[14px] text-sub">
+          <span className="text-muted">@{c.handle}</span>
           {c.bio && <span className="ml-2">{c.bio}</span>}
         </p>
       </header>
-      <section className="space-y-2.5 px-3">
+      <h2 className="mt-2 bg-surface px-5 pt-5 text-[17px] font-bold">{c.nickname}님이 고른 핫딜</h2>
+      <section className="divide-y divide-line bg-surface">
         {deals.items.map((d) => (
           <DealCard key={d.id} deal={d} refCode={c.refCode} />
         ))}
-        {deals.items.length === 0 && <p className="py-16 text-center text-sm text-sub">아직 올린 딜이 없어요</p>}
+        {deals.items.length === 0 && <Empty title="아직 올린 딜이 없어요" />}
       </section>
-      <footer className="py-8 text-center text-xs text-sub">
-        <Link href={`/?r=${c.refCode}`} className="font-bold text-brand">
+      <footer className="py-8 text-center text-[13px] text-muted">
+        <Link href={`/?r=${c.refCode}`} className="font-semibold text-brand">
           줍줍
         </Link>
-        에서 나만의 핫딜 채널 만들기
+        에서 나만의 핫딜 채널을 만들어보세요
       </footer>
     </div>
   );

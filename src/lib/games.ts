@@ -160,7 +160,7 @@ export async function drawGacha(userId: number) {
       SELECT i.id, i.item_key, i.name, i.image, i.rarity, i.slot FROM shop_items i
       WHERE i.kind = 'cosmetic' AND i.active AND i.price_chips IS NULL
         AND NOT EXISTS (SELECT 1 FROM user_items ui WHERE ui.user_id = ${userId} AND ui.item_id = i.id)`;
-    if (!pool.length) throw new GameError("모든 꾸미기를 모았어요! 🎉");
+    if (!pool.length) throw new GameError("모든 꾸미기를 이미 모았어요");
     await debit(tx, userId, GAME_POLICY.gacha.cost, "gacha", "꾸미기 뽑기");
     // 등급을 먼저 뽑고(남은 등급 중), 그 등급 안에서 균등 추첨
     const rarities = [...new Set(pool.map((p) => p.rarity))].map((r) => ({ r, weight: GAME_POLICY.gacha.weights[r] ?? 1 }));

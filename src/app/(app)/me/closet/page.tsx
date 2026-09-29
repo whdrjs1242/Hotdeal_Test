@@ -6,11 +6,11 @@ import { getLook } from "@/lib/cosmetics";
 import { RARITY } from "@/lib/market";
 import { ProfileCard } from "@/components/ProfileCard";
 import { EquipButton } from "@/components/EquipButton";
-import { BackButton } from "@/components/BackButton";
+import { TopBar } from "@/components/ui";
 
-export const metadata = { title: "꾸미기" };
+export const metadata = { title: "프로필 꾸미기" };
 
-const SLOT_LABEL = { character: "캐릭터", card: "프로필 카드", frame: "테두리", title: "칭호" } as const;
+const SLOT_LABEL = { character: "캐릭터", card: "카드 배경", frame: "테두리", title: "칭호" } as const;
 
 export default async function ClosetPage() {
   const user = await getCurrentUser();
@@ -24,55 +24,49 @@ export default async function ClosetPage() {
       SELECT equip_character AS character, equip_card AS card, equip_frame AS frame, equip_title AS title FROM users WHERE id = ${user.id}`,
   ]);
   return (
-    <div className="pt-safe pb-8">
-      <div className="flex h-12 items-center gap-2 px-2">
-        <BackButton />
-        <span className="text-sm font-semibold">꾸미기 옷장</span>
-      </div>
-      <div className="px-3">
+    <>
+      <TopBar title="프로필 꾸미기" />
+      <div className="bg-surface px-5 pb-5 pt-2">
+        <p className="mb-3 text-[13px] text-muted">미리보기</p>
         <ProfileCard nickname={user.nickname} xp={user.xp} look={look} avatarUrl={user.avatarUrl} />
       </div>
       {(Object.keys(SLOT_LABEL) as (keyof typeof SLOT_LABEL)[]).map((slot) => {
         const mine = items.filter((i) => i.slot === slot);
         return (
-          <section key={slot} className="mt-4 px-3">
-            <h2 className="px-1 text-sm font-black">{SLOT_LABEL[slot]}</h2>
-            <div className="mt-2 grid grid-cols-4 gap-2">
-              {mine.map((i) => (
-                <EquipButton
-                  key={i.itemKey}
-                  slot={slot}
-                  itemKey={i.itemKey}
-                  equipped={eq[slot] === i.itemKey}
-                  name={i.name}
-                  color={RARITY[i.rarity as keyof typeof RARITY]?.color}
-                >
-                  {slot === "card" ? (
-                    <span className="block h-8 w-12 rounded" style={{ background: i.image }} />
-                  ) : slot === "frame" ? (
-                    <span className="block h-8 w-8 rounded-full" style={{ boxShadow: `0 0 0 3px ${i.image}` }} />
-                  ) : (
-                    <span className="text-3xl">{i.image}</span>
-                  )}
-                </EquipButton>
-              ))}
-              {mine.length === 0 && (
-                <Link href="/market?tab=cosmetic" className="col-span-4 rounded-xl bg-surface py-4 text-center text-xs text-sub ring-1 ring-line">
-                  아직 없어요 · 상점이나 뽑기에서 얻어보세요
-                </Link>
-              )}
-            </div>
+          <section key={slot} className="mt-2 bg-surface px-5 py-5">
+            <h2 className="text-[16px] font-bold">
+              {SLOT_LABEL[slot]} <span className="font-normal text-muted">{mine.length}</span>
+            </h2>
+            {mine.length > 0 ? (
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {mine.map((i) => (
+                  <EquipButton key={i.itemKey} slot={slot} itemKey={i.itemKey} equipped={eq[slot] === i.itemKey} name={i.name} rarity={RARITY[i.rarity as keyof typeof RARITY]?.label}>
+                    {slot === "card" ? (
+                      <span className="block h-8 w-12 rounded" style={{ background: i.image }} />
+                    ) : slot === "frame" ? (
+                      <span className="block h-8 w-8 rounded-full" style={{ boxShadow: `0 0 0 3px ${i.image}` }} />
+                    ) : slot === "title" ? (
+                      <span className="text-[11px] font-semibold text-sub">칭호</span>
+                    ) : (
+                      <span className="text-[28px]">{i.image}</span>
+                    )}
+                  </EquipButton>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-[14px] text-muted">아직 없어요.</p>
+            )}
           </section>
         );
       })}
-      <div className="mt-6 grid grid-cols-2 gap-2 px-3">
-        <Link href="/market?tab=cosmetic" className="rounded-xl bg-ink py-3 text-center text-sm font-bold text-surface">
-          꾸미기 상점
+      <div className="grid grid-cols-2 gap-2 px-5 py-5">
+        <Link href="/market?tab=cosmetic" className="press flex h-12 items-center justify-center rounded-xl bg-ink text-[15px] font-semibold text-surface">
+          포인트로 사기
         </Link>
-        <Link href="/points" className="rounded-xl bg-[#4a3aa7] py-3 text-center text-sm font-bold text-white">
-          🎰 뽑기
+        <Link href="/points" className="press flex h-12 items-center justify-center rounded-xl bg-surface text-[15px] font-semibold ring-1 ring-line">
+          뽑기·구슬로 얻기
         </Link>
       </div>
-    </div>
+    </>
   );
 }

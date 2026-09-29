@@ -1,39 +1,39 @@
 @import "tailwindcss";
 
+/* 디자인 토큰 — docs/DESIGN.md 참고 */
 @theme {
-  --color-brand: #ff5f45;
-  --color-brand-dark: #e8472e;
-  --color-brand-soft: #ffece6;
-  --color-cool: #4c8dff;
-  --color-ink: #2a2433;
-  --color-sub: #8a8295;
-  --color-line: #f1e9e2;
+  --color-canvas: #f2f4f6;
   --color-surface: #ffffff;
-  --color-canvas: #fff8f1;
-  --color-butter: #fff0b8;
-  --color-mint: #d6f6e6;
-  --color-sky: #dbeaff;
-  --color-lilac: #ebe3ff;
-  --color-peach: #ffe2d4;
-  --color-bubble: #ffe1ee;
-  --font-display: "Jua", "Pretendard Variable", sans-serif;
+  --color-fill: #f2f4f6;
+  --color-line: #e5e8eb;
+  --color-ink: #191f28;
+  --color-sub: #4e5968;
+  --color-muted: #8b95a1;
+  --color-brand: #ff5b2e;
+  --color-brand-dark: #e8491e;
+  --color-brand-soft: #fff1ec;
+  --color-positive: #12a150;
+  --color-negative: #e5484d;
+  --color-info: #3182f6;
+  --color-cool: #3182f6;
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-ink: #f5f1fa;
-    --color-sub: #a79fb3;
-    --color-line: #302a3a;
-    --color-surface: #1d1925;
-    --color-canvas: #14111a;
-    --color-brand-soft: #3a1f1a;
-    --color-butter: #3b3320;
-    --color-mint: #1d3a2e;
-    --color-sky: #1e2c45;
-    --color-lilac: #2c2545;
-    --color-peach: #3d2a22;
-    --color-bubble: #3d2233;
+    --color-canvas: #101114;
+    --color-surface: #1b1c21;
+    --color-fill: #26282e;
+    --color-line: #2e3036;
+    --color-ink: #eceef1;
+    --color-sub: #b0b8c1;
+    --color-muted: #7d8590;
+    --color-brand: #ff6b42;
+    --color-brand-soft: #3a211a;
+    --color-positive: #2fbf71;
+    --color-negative: #ff6369;
+    --color-info: #4c94ff;
+    --color-cool: #4c94ff;
   }
 }
 
@@ -45,6 +45,10 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   overscroll-behavior-y: none;
+  word-break: keep-all;
+}
+.tnum {
+  font-variant-numeric: tabular-nums;
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -58,43 +62,30 @@ body {
 .pt-safe {
   padding-top: env(safe-area-inset-top);
 }
+/* 누르는 피드백 — 모든 탭 가능한 요소 공통 */
+.press {
+  transition: transform 0.1s ease, background-color 0.15s ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
 @keyframes pop {
   0% { transform: scale(1); }
-  40% { transform: scale(1.25); }
+  40% { transform: scale(1.12); }
   100% { transform: scale(1); }
 }
 .animate-pop {
-  animation: pop 0.3s ease-out;
+  animation: pop 0.25s ease-out;
 }
-
-/* 수배지 포스터 */
-:root {
-  --wanted-bg: #fbf1dc;
-  --wanted-ink: #3b2a1a;
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --wanted-bg: #2a2118;
-    --wanted-ink: #f3dfb8;
-  }
+.sheet-up {
+  animation: sheet-up 0.22s ease-out;
 }
-.wanted {
-  background:
-    radial-gradient(circle at 12% 18%, rgb(0 0 0 / 0.035) 0 2px, transparent 3px) 0 0 / 22px 22px,
-    var(--wanted-bg);
-  color: var(--wanted-ink);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--wanted-ink) 22%, transparent);
-}
-.wanted-stamp {
-  display: inline-block;
-  transform: rotate(-4deg);
-  border: 2px solid currentColor;
-  border-radius: 4px;
-  padding: 0 6px;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  color: #c2410c;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
 /* ---------- 운영 대시보드 (dataviz 팔레트: 검증된 categorical 1~3 슬롯, blue sequential) ---------- */
@@ -152,103 +143,4 @@ body {
 }
 .dash .tnum {
   font-variant-numeric: tabular-nums;
-}
-
-/* ---------- 아기자기 UI 키트 ---------- */
-.app h1,
-.app h2,
-.font-display {
-  font-family: var(--font-display);
-  font-synthesis: none;
-  letter-spacing: -0.01em;
-}
-.app h1.font-black,
-.app h2.font-black,
-.app h1.font-bold,
-.app h2.font-bold,
-.font-display {
-  font-weight: 400;
-}
-/* 눌리는 3D 버튼 */
-.btn-pop {
-  box-shadow: 0 4px 0 0 rgb(0 0 0 / 0.14);
-  transition: transform 0.08s, box-shadow 0.08s;
-}
-.btn-pop:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 0 rgb(0 0 0 / 0.14);
-}
-/* 말랑한 카드 */
-.card-soft {
-  background: var(--color-surface);
-  border-radius: 24px;
-  box-shadow: 0 10px 28px -16px rgb(90 50 20 / 0.28), 0 0 0 1px var(--color-line);
-}
-@keyframes floaty {
-  0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-5px) rotate(3deg); }
-}
-.floaty {
-  animation: floaty 2.6s ease-in-out infinite;
-}
-@keyframes jelly {
-  0% { transform: scale(1, 1); }
-  30% { transform: scale(1.18, 0.86); }
-  45% { transform: scale(0.9, 1.1); }
-  65% { transform: scale(1.05, 0.96); }
-  100% { transform: scale(1, 1); }
-}
-.jelly {
-  animation: jelly 0.5s;
-}
-@keyframes shimmer {
-  to { background-position: 200% center; }
-}
-.shimmer-text {
-  background: linear-gradient(90deg, #ff5f45, #ffb800, #ff4fa3, #7b61ff, #ff5f45);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: shimmer 3s linear infinite;
-}
-/* 카지노 라운지 */
-.lounge {
-  background:
-    radial-gradient(circle at 20% 0%, rgb(255 79 163 / 0.35), transparent 45%),
-    radial-gradient(circle at 90% 20%, rgb(123 97 255 / 0.4), transparent 40%),
-    #1b1330;
-  color: #fff;
-  /* 셸의 하단 여백(탭바 자리)까지 배경을 채운다 */
-  margin-bottom: -7rem;
-  padding-bottom: 8rem !important;
-}
-.neon {
-  text-shadow: 0 0 6px rgb(255 214 102 / 0.9), 0 0 18px rgb(255 79 163 / 0.6);
-}
-@keyframes bulbs {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
-}
-.bulbs {
-  background-image: radial-gradient(circle, #ffd666 2.5px, transparent 3px);
-  background-size: 16px 16px;
-  animation: bulbs 0.9s steps(2) infinite;
-}
-@keyframes confetti-fall {
-  0% { transform: translateY(-20vh) rotate(0); opacity: 1; }
-  100% { transform: translateY(110vh) rotate(720deg); opacity: 0.8; }
-}
-.confetti-piece {
-  position: fixed;
-  top: 0;
-  width: 9px;
-  height: 14px;
-  border-radius: 3px;
-  z-index: 60;
-  pointer-events: none;
-  animation: confetti-fall linear forwards;
-}
-@media (prefers-reduced-motion: reduce) {
-  .floaty, .jelly, .shimmer-text, .bulbs, .confetti-piece, .animate-pop { animation: none !important; }
 }

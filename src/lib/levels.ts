@@ -1,9 +1,9 @@
 export const LEVELS = [
-  { min: 0, name: "새싹 줍러", emoji: "🌱" },
-  { min: 100, name: "줍줍러", emoji: "🧺" },
-  { min: 500, name: "딜 헌터", emoji: "🎯" },
-  { min: 2000, name: "딜 고수", emoji: "🔥" },
-  { min: 8000, name: "딜 레전드", emoji: "👑" },
+  { min: 0, name: "새내기", emoji: "" },
+  { min: 100, name: "알뜰러", emoji: "" },
+  { min: 500, name: "딜 헌터", emoji: "" },
+  { min: 2000, name: "딜 고수", emoji: "" },
+  { min: 8000, name: "딜 마스터", emoji: "" },
 ] as const;
 
 export function levelOf(xp: number) {

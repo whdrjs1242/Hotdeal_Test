@@ -61,7 +61,7 @@ describe("splitCommission", () => {
 
 describe("levels", () => {
   it("XP → 레벨", () => {
-    expect(levelOf(0).name).toBe("새싹 줍러");
+    expect(levelOf(0).name).toBe("새내기");
     expect(levelOf(600).level).toBe(3);
     expect(levelOf(99999).progress).toBe(1);
   });

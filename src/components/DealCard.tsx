@@ -1,62 +1,49 @@
 import Link from "next/link";
 import type { DealCard as Deal } from "@/lib/deals";
-import { discountRate, temperature } from "@/lib/ranking";
-import { compact, timeAgo, won } from "@/lib/format";
+import { discountRate } from "@/lib/ranking";
+import { timeAgo, won } from "@/lib/format";
 import { merchantById } from "@/lib/affiliate/merchants";
-import { levelOf } from "@/lib/levels";
 import { Countdown } from "./Countdown";
+import { Badge } from "./ui";
+import { Img } from "@/components/Img";
 
-export function DealCard({ deal, rank, refCode }: { deal: Deal; rank?: number; refCode?: string }) {
+/** 딜 목록 한 줄: 이미지 · 판매처/시간 · 제목 · 가격 · 반응 */
+export function DealCard({ deal, refCode }: { deal: Deal; rank?: number; refCode?: string }) {
   const off = discountRate(deal.price, deal.originalPrice);
-  const temp = temperature(deal.votesUp, deal.votesDown);
   const ended = deal.status !== "active";
-  const lv = levelOf(deal.userXp);
   return (
-    <Link
-      href={`/deals/${deal.id}${refCode ? `?r=${refCode}` : ""}`}
-      className={`card-soft flex gap-3 p-3 transition active:scale-[0.99] ${ended ? "opacity-50" : ""}`}
-    >
-      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-peach/60">
-        {deal.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={deal.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full items-center justify-center text-3xl">🛍️</div>
-        )}
-        {rank != null && rank < 3 && (
-          <span className="font-display absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-brand text-sm text-white shadow">
-            {rank + 1}
-          </span>
+    <Link href={`/deals/${deal.id}${refCode ? `?r=${refCode}` : ""}`} className="flex gap-3.5 bg-surface px-5 py-4 active:bg-fill">
+      <div className="relative h-[92px] w-[92px] shrink-0 overflow-hidden rounded-lg bg-fill">
+        {deal.imageUrl && (
+          <Img src={deal.imageUrl} className={`h-full w-full object-cover ${ended ? "opacity-40" : ""}`} />
         )}
         {ended && (
-          <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-bold text-white">
+          <span className="absolute inset-0 flex items-center justify-center text-[13px] font-semibold text-sub">
             {deal.status === "soldout" ? "품절" : "종료"}
           </span>
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5 text-[11px] text-sub">
-          {deal.bountyId && <span className="rounded bg-[#fbf1dc] px-1 font-bold text-[#c2410c] dark:bg-[#2a2118]">🎯 수배 발견</span>}
-          <span className="font-semibold text-ink/80">{merchantById(deal.merchant).name}</span>
+        <div className="flex items-center gap-1.5 text-[12px] text-muted">
+          {deal.bountyId && <Badge tone="brand">수배 발견</Badge>}
+          <span>{merchantById(deal.merchant).name}</span>
           <span>·</span>
           <span>{timeAgo(deal.createdAt)}</span>
-          {deal.endsAt && !ended && <Countdown endsAt={deal.endsAt} />}
         </div>
-        <h3 className="mt-0.5 line-clamp-2 text-[15px] font-medium leading-snug">{deal.title}</h3>
+        <p className={`mt-0.5 line-clamp-2 text-[15px] leading-[1.4] ${ended ? "text-muted" : ""}`}>{deal.title}</p>
         <div className="mt-1 flex items-baseline gap-1.5">
-          {off > 0 && <span className="rounded-lg bg-brand px-1.5 text-[13px] font-extrabold text-white">-{off}%</span>}
-          <span className="text-[16px] font-extrabold">{deal.price != null ? won(deal.price) : "가격 확인"}</span>
-          {deal.shipping && <span className="text-[11px] text-sub">{deal.shipping}</span>}
+          {off > 0 && <span className="text-[15px] font-bold text-brand">{off}%</span>}
+          <span className="tnum text-[16px] font-bold">{deal.price != null ? won(deal.price) : "가격 확인 필요"}</span>
+          {deal.shipping && <span className="text-[12px] text-muted">{deal.shipping}</span>}
         </div>
-        <div className="mt-1 flex items-center gap-2.5 text-[11px] text-sub">
-          <span className={`font-bold ${temp >= 50 ? "text-brand" : temp < 36.5 ? "text-cool" : "text-ink/70"}`}>
-            {temp >= 50 ? "🔥" : "🌡️"} {temp}°
-          </span>
-          <span>💬 {compact(deal.commentCount)}</span>
-          <span>👆 {compact(deal.clickCount)}</span>
-          <span className="ml-auto truncate">
-            {deal.userChar ?? lv.emoji} {deal.nickname}
-          </span>
+        <div className="mt-1 flex items-center gap-2.5 text-[12px] text-muted">
+          <span>추천 {deal.votesUp}</span>
+          <span>댓글 {deal.commentCount}</span>
+          {deal.endsAt && !ended && (
+            <span className="ml-auto">
+              <Countdown endsAt={deal.endsAt} />
+            </span>
+          )}
         </div>
       </div>
     </Link>

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES } from "@/lib/categories";
+import { Img } from "@/components/Img";
 
 interface Preview {
   canonicalUrl: string;
@@ -11,22 +12,15 @@ interface Preview {
   duplicate: { id: number; title: string; price: number | null } | null;
 }
 
-const input = "h-11 w-full rounded-xl bg-surface px-3 text-[15px] outline-none ring-1 ring-line focus:ring-2 focus:ring-brand";
+const field = "h-12 w-full rounded-xl bg-fill px-4 text-[15px] outline-none placeholder:text-muted focus:ring-2 focus:ring-ink/10";
+const label = "mb-1.5 block text-[14px] font-semibold";
 
+/** 1단계: 링크 → 2단계: 자동 채워진 정보 확인·수정 → 올리기 */
 export function SubmitForm({ initialUrl }: { initialUrl: string }) {
   const router = useRouter();
   const [url, setUrl] = useState(initialUrl);
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [form, setForm] = useState({
-    title: "",
-    price: "",
-    originalPrice: "",
-    shipping: "무료배송",
-    imageUrl: "",
-    category: "etc",
-    description: "",
-    endsAt: "",
-  });
+  const [form, setForm] = useState({ title: "", price: "", originalPrice: "", shipping: "무료배송", imageUrl: "", category: "etc", description: "", endsAt: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,6 +56,7 @@ export function SubmitForm({ initialUrl }: { initialUrl: string }) {
     e.preventDefault();
     setBusy(true);
     setError("");
+    const num = (v: string) => (v ? Number(v.replace(/[^\d]/g, "")) : null);
     const res = await fetch("/api/deals", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -69,8 +64,8 @@ export function SubmitForm({ initialUrl }: { initialUrl: string }) {
         url: preview?.canonicalUrl ?? url,
         title: form.title,
         description: form.description || null,
-        price: form.price ? Number(form.price.replace(/[^\d]/g, "")) : null,
-        originalPrice: form.originalPrice ? Number(form.originalPrice.replace(/[^\d]/g, "")) : null,
+        price: num(form.price),
+        originalPrice: num(form.originalPrice),
         shipping: form.shipping || null,
         imageUrl: form.imageUrl || null,
         category: form.category,
@@ -79,98 +74,135 @@ export function SubmitForm({ initialUrl }: { initialUrl: string }) {
     });
     const data = await res.json();
     setBusy(false);
-    if (!res.ok) return setError(data.error ?? "등록에 실패했어요");
+    if (!res.ok) return setError(data.error ?? "올리지 못했어요");
     router.replace(`/deals/${data.id}`);
   }
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+  const price = Number(form.price.replace(/[^\d]/g, "")) || 0;
+  const orig = Number(form.originalPrice.replace(/[^\d]/g, "")) || 0;
+  const off = orig > price && price > 0 ? Math.round((1 - price / orig) * 100) : 0;
 
   return (
-    <form onSubmit={submit} className="mt-5 space-y-4 pb-10">
-      <div className="flex gap-2">
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onPaste={(e) => {
-            const t = e.clipboardData.getData("text");
-            if (t) setTimeout(() => load(t), 0);
-          }}
-          placeholder="쇼핑몰 상품 링크 붙여넣기"
-          className={input}
-          inputMode="url"
-        />
-        <button type="button" onClick={() => load()} disabled={busy} className="h-11 shrink-0 rounded-xl bg-ink px-4 text-sm font-bold text-surface">
-          {busy && !preview ? "…" : "불러오기"}
-        </button>
-      </div>
-
-      {preview && (
-        <div className="flex items-center gap-2 rounded-xl bg-brand-soft px-3 py-2 text-sm">
-          <b>{preview.merchant.name}</b>
-          {preview.monetized ? (
-            <span className="text-brand">✓ 구매 기여 포인트 적립 딜</span>
-          ) : (
-            <span className="text-sub">일반 링크</span>
-          )}
+    <form onSubmit={submit} className="space-y-2 pb-10">
+      <section className="bg-surface px-5 py-5">
+        <label className={label} htmlFor="deal-url">
+          상품 링크
+        </label>
+        <div className="flex gap-2">
+          <input
+            id="deal-url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onPaste={(e) => {
+              const t = e.clipboardData.getData("text");
+              if (t) setTimeout(() => load(t), 0);
+            }}
+            placeholder="쇼핑몰 상품 링크를 붙여넣으세요"
+            className={field}
+            inputMode="url"
+          />
+          <button type="button" onClick={() => load()} disabled={busy || !url} className="press h-12 shrink-0 rounded-xl bg-ink px-4 text-[15px] font-semibold text-surface disabled:opacity-30">
+            {busy && !preview ? "확인 중" : "불러오기"}
+          </button>
         </div>
-      )}
-      {preview?.duplicate && (
-        <a href={`/deals/${preview.duplicate.id}`} className="block rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          ⚠️ 이미 올라온 딜이 있어요: {preview.duplicate.title} → 보러가기
-        </a>
-      )}
+        {!preview && <p className="mt-2 text-[13px] text-muted">쿠팡, 11번가, G마켓, 알리익스프레스 등 대부분의 쇼핑몰 링크를 쓸 수 있어요.</p>}
+        {preview?.duplicate && (
+          <a href={`/deals/${preview.duplicate.id}`} className="mt-3 block rounded-xl bg-[#fff7e6] px-4 py-3 text-[14px] text-[#8a5a00] dark:bg-[#2e2615] dark:text-[#f0c26b]">
+            같은 상품이 이미 올라와 있어요: {preview.duplicate.title}
+          </a>
+        )}
+      </section>
 
       {(preview || form.title) && (
         <>
-          {form.imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={form.imageUrl} alt="" className="mx-auto h-40 w-40 rounded-xl object-cover" />
-          )}
-          <label className="block text-sm font-semibold">
-            제목
-            <input required value={form.title} onChange={set("title")} maxLength={120} className={`${input} mt-1`} placeholder="예) [역대최저] 에어팟 프로2 199,000원" />
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block text-sm font-semibold">
-              할인가
-              <input value={form.price} onChange={set("price")} inputMode="numeric" className={`${input} mt-1`} placeholder="원" />
-            </label>
-            <label className="block text-sm font-semibold">
-              정가 <span className="font-normal text-sub">(선택)</span>
-              <input value={form.originalPrice} onChange={set("originalPrice")} inputMode="numeric" className={`${input} mt-1`} placeholder="원" />
-            </label>
+          <section className="space-y-4 bg-surface px-5 py-5">
+            <div className="flex gap-3">
+              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-fill">
+                {form.imageUrl && (
+                  <Img src={form.imageUrl} alt="" className="h-full w-full object-cover" />
+                )}
+              </div>
+              <div className="text-[13px] text-muted">
+                <p className="text-[14px] font-semibold text-ink">{preview?.merchant.name}</p>
+                <p className="mt-0.5">상품 정보는 판매처 페이지에서 자동으로 가져왔어요. 다르면 고쳐주세요.</p>
+              </div>
+            </div>
+            <div>
+              <label className={label} htmlFor="t">
+                제목
+              </label>
+              <input id="t" required value={form.title} onChange={set("title")} maxLength={120} className={field} placeholder="상품명과 조건을 알기 쉽게" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={label} htmlFor="p">
+                  판매가
+                </label>
+                <input id="p" value={form.price} onChange={set("price")} inputMode="numeric" className={field} placeholder="원" />
+              </div>
+              <div>
+                <label className={label} htmlFor="o">
+                  정가 <span className="font-normal text-muted">(선택)</span>
+                </label>
+                <input id="o" value={form.originalPrice} onChange={set("originalPrice")} inputMode="numeric" className={field} placeholder="원" />
+              </div>
+            </div>
+            {off > 0 && <p className="-mt-2 text-[13px] text-brand">할인율 {off}%로 표시돼요</p>}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={label} htmlFor="s">
+                  배송
+                </label>
+                <input id="s" value={form.shipping} onChange={set("shipping")} className={field} />
+              </div>
+              <div>
+                <label className={label} htmlFor="c">
+                  카테고리
+                </label>
+                <select id="c" value={form.category} onChange={set("category")} className={field}>
+                  {CATEGORIES.filter((c) => c.id !== "all").map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-4 bg-surface px-5 py-5">
+            <div>
+              <label className={label} htmlFor="e">
+                마감 시간 <span className="font-normal text-muted">(타임딜이라면)</span>
+              </label>
+              <input id="e" type="datetime-local" value={form.endsAt} onChange={set("endsAt")} className={field} />
+            </div>
+            <div>
+              <label className={label} htmlFor="d">
+                구매 팁 <span className="font-normal text-muted">(선택)</span>
+              </label>
+              <textarea
+                id="d"
+                value={form.description}
+                onChange={set("description")}
+                rows={3}
+                maxLength={2000}
+                className={`${field} h-auto py-3`}
+                placeholder="카드 할인, 쿠폰 적용 방법 등"
+              />
+            </div>
+          </section>
+
+          <div className="px-5 pt-2">
+            <button disabled={busy} className="press h-[52px] w-full rounded-xl bg-brand text-[16px] font-semibold text-white disabled:bg-line disabled:text-muted">
+              {busy ? "올리는 중" : "올리기"}
+            </button>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block text-sm font-semibold">
-              배송
-              <input value={form.shipping} onChange={set("shipping")} className={`${input} mt-1`} />
-            </label>
-            <label className="block text-sm font-semibold">
-              카테고리
-              <select value={form.category} onChange={set("category")} className={`${input} mt-1`}>
-                {CATEGORIES.filter((c) => c.id !== "all").map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.emoji} {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <label className="block text-sm font-semibold">
-            마감 시간 <span className="font-normal text-sub">(타임딜이면 입력 — 마감임박 탭에 노출)</span>
-            <input type="datetime-local" value={form.endsAt} onChange={set("endsAt")} className={`${input} mt-1`} />
-          </label>
-          <label className="block text-sm font-semibold">
-            꿀팁 <span className="font-normal text-sub">(카드할인, 쿠폰 적용법 등)</span>
-            <textarea value={form.description} onChange={set("description")} rows={3} maxLength={2000} className={`${input} mt-1 h-auto py-2`} />
-          </label>
-          <button disabled={busy} className="h-12 w-full rounded-xl bg-brand text-[16px] font-bold text-white disabled:opacity-50">
-            {busy ? "등록 중…" : "🔥 핫딜 올리기 (+10 XP)"}
-          </button>
         </>
       )}
-      {error && <p className="text-sm font-semibold text-brand">{error}</p>}
+      {error && <p className="px-5 text-[14px] text-negative">{error}</p>}
     </form>
   );
 }

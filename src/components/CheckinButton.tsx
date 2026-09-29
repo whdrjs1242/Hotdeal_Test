@@ -2,19 +2,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function CheckinButton({ streak }: { streak: number }) {
+export function CheckinButton({ streak, checked = false }: { streak: number; checked?: boolean }) {
   const router = useRouter();
-  const [msg, setMsg] = useState<string | null>(null);
+  const [done, setDone] = useState(checked);
+  const [msg, setMsg] = useState("");
   async function checkin() {
     const res = await fetch("/api/me/checkin", { method: "POST" });
     const d = await res.json();
-    if (d.already) setMsg("오늘 출석 완료!");
-    else setMsg(`🔥 ${d.streak}일 연속! +${d.xp}XP${d.bonus ? ` +${d.bonus}P` : ""}`);
+    setDone(true);
+    if (!d.already) setMsg(`${d.streak}일째${d.bonus ? ` · +${d.bonus}P` : ""}`);
     router.refresh();
   }
+  if (done) return <span className="text-[13px] font-semibold text-positive">{msg || `${streak}일째 완료`}</span>;
   return (
-    <button onClick={checkin} className="rounded-xl bg-brand-soft px-3 py-2 text-xs font-bold text-brand">
-      {msg ?? `출석 체크 · ${streak}일째`}
+    <button onClick={checkin} className="press h-8 rounded-lg bg-brand px-3 text-[13px] font-semibold text-white">
+      출석하기
     </button>
   );
 }

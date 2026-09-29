@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Icon } from "./Icon";
 
 declare global {
   interface Window {
@@ -12,8 +13,8 @@ declare global {
 }
 
 /**
- * 공유 = 성장 엔진. 로그인 사용자의 공유 링크엔 ref 코드가 붙어
- * 이 링크로 친구가 들어오면 유입 포인트, 구매로 이어지면 구매 기여 포인트가 쌓인다.
+ * 공유 시트. 로그인 사용자의 링크에는 추천 코드가 붙어,
+ * 친구가 들어오면 방문 포인트, 구매로 이어지면 구매 포인트가 쌓인다.
  */
 export function ShareButton({
   dealId,
@@ -22,14 +23,13 @@ export function ShareButton({
   rewardText,
   variant = "full",
   trackPath,
-  label = "📣 공유하고 포인트 받기",
+  label = "공유하기",
 }: {
   dealId: number;
   title: string;
   shareUrl: string;
   rewardText: string;
   variant?: "full" | "icon";
-  /** 공유 기록 API (기본: 딜 공유) */
   trackPath?: string;
   label?: string;
 }) {
@@ -45,18 +45,13 @@ export function ShareButton({
     }).catch(() => {});
 
   async function nativeShare() {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text: `🔥 ${title}`, url: shareUrl });
-        track("native");
-        return;
-      } catch {
-        return;
-      }
-    }
-    setOpen(true);
+    if (!navigator.share) return copy();
+    try {
+      await navigator.share({ title, text: title, url: shareUrl });
+      track("native");
+      setOpen(false);
+    } catch {}
   }
-
   async function kakao() {
     const key = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
     if (!key) return copy();
@@ -73,9 +68,8 @@ export function ShareButton({
     window.Kakao!.Share.sendScrap({ requestUrl: shareUrl });
     track("kakao");
   }
-
   async function copy() {
-    await navigator.clipboard.writeText(`🔥 ${title}\n${shareUrl}`);
+    await navigator.clipboard.writeText(`${title}\n${shareUrl}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
     track("copy");
@@ -84,36 +78,45 @@ export function ShareButton({
   return (
     <>
       {variant === "icon" ? (
-        <button onClick={nativeShare} aria-label="공유" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-canvas text-xl">
-          ↗
+        <button onClick={() => setOpen(true)} aria-label="공유하기" className="press flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl bg-fill">
+          <Icon name="share" />
         </button>
       ) : (
-        <button onClick={() => setOpen(true)} className="w-full rounded-2xl bg-ink p-4 text-left text-surface">
-          <div className="text-[15px] font-bold">{label}</div>
-          <div className="mt-0.5 text-xs opacity-80">{rewardText}</div>
+        <button onClick={() => setOpen(true)} className="press flex w-full items-center gap-3 rounded-xl bg-fill px-4 py-3.5 text-left">
+          <Icon name="share" size={22} className="text-sub" />
+          <span className="flex-1">
+            <span className="block text-[15px] font-semibold">{label}</span>
+            <span className="block text-[12px] text-muted">{rewardText}</span>
+          </span>
+          <Icon name="chevron" size={18} className="text-muted" />
         </button>
       )}
       {open && (
         <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={() => setOpen(false)}>
-          <div className="pb-safe mx-auto w-full max-w-md rounded-t-3xl bg-surface p-5" onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line" />
-            <h3 className="text-lg font-bold">친구에게 알려주기</h3>
-            <p className="mt-1 text-sm text-sub">{rewardText}</p>
-            <div className="mt-5 grid grid-cols-3 gap-3 text-center text-xs">
-              <button onClick={kakao} className="flex flex-col items-center gap-1.5">
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEE500] text-2xl">💬</span>
+          <div className="sheet-up pb-safe mx-auto w-full max-w-md rounded-t-2xl bg-surface px-5 pb-6 pt-3" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-line" />
+            <h3 className="text-[18px] font-bold">공유하기</h3>
+            <p className="mt-1 text-[13px] text-sub">{rewardText}</p>
+            <div className="mt-5 grid grid-cols-3 gap-2 text-[13px]">
+              <button onClick={kakao} className="press flex flex-col items-center gap-2 rounded-xl py-2">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FEE500] text-[#191919]">
+                  <Icon name="comment" size={22} />
+                </span>
                 카카오톡
               </button>
-              <button onClick={nativeShare} className="flex flex-col items-center gap-1.5">
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-canvas text-2xl">📤</span>
+              <button onClick={copy} className="press flex flex-col items-center gap-2 rounded-xl py-2">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-fill">
+                  <Icon name={copied ? "check" : "link"} size={22} />
+                </span>
+                {copied ? "복사했어요" : "링크 복사"}
+              </button>
+              <button onClick={nativeShare} className="press flex flex-col items-center gap-2 rounded-xl py-2">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-fill">
+                  <Icon name="more" size={22} />
+                </span>
                 다른 앱
               </button>
-              <button onClick={copy} className="flex flex-col items-center gap-1.5">
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-canvas text-2xl">{copied ? "✅" : "🔗"}</span>
-                {copied ? "복사됨!" : "링크 복사"}
-              </button>
             </div>
-            <div className="mt-5 truncate rounded-xl bg-canvas px-3 py-2 text-xs text-sub">{shareUrl}</div>
           </div>
         </div>
       )}

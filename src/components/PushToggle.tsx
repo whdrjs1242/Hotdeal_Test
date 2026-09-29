@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Icon } from "./Icon";
 
 function urlBase64ToUint8Array(base64: string) {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -24,10 +25,7 @@ export function PushToggle({ vapidKey }: { vapidKey: string }) {
     try {
       const reg = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register("/sw.js"));
       await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
-      });
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vapidKey) });
       await fetch("/api/push", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(sub) });
       setState("on");
     } catch {
@@ -35,22 +33,20 @@ export function PushToggle({ vapidKey }: { vapidKey: string }) {
     }
   }
 
-  if (state === "on") return null;
+  const text =
+    state === "on"
+      ? "휴대폰 알림을 받고 있어요"
+      : state === "unsupported"
+        ? "홈 화면에 앱을 추가하면 휴대폰 알림을 받을 수 있어요"
+        : state === "denied"
+          ? "브라우저 설정에서 알림을 허용해주세요"
+          : "휴대폰 알림을 켜면 품절 전에 먼저 알려드려요";
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-ink p-4 text-surface">
-      <span className="text-2xl">📲</span>
-      <div className="flex-1 text-sm">
-        <div className="font-bold">핫딜 푸시 알림 켜기</div>
-        <div className="text-xs opacity-80">
-          {state === "unsupported"
-            ? "홈 화면에 추가(앱 설치)하면 알림을 받을 수 있어요"
-            : state === "denied"
-              ? "브라우저 설정에서 알림을 허용해주세요"
-              : "품절 전에 먼저 알려드릴게요"}
-        </div>
-      </div>
+    <div className="flex items-center gap-3 rounded-xl bg-fill px-4 py-3.5">
+      <Icon name="bell" size={22} className="text-sub" />
+      <p className="flex-1 text-[14px]">{text}</p>
       {state === "off" && (
-        <button onClick={enable} className="rounded-xl bg-brand px-3 py-2 text-sm font-bold text-white">
+        <button onClick={enable} className="press h-8 rounded-lg bg-brand px-3 text-[13px] font-semibold text-white">
           켜기
         </button>
       )}

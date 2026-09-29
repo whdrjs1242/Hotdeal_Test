@@ -21,13 +21,13 @@ export async function notifyAlertMatches(deal: { id: number; title: string; pric
     INSERT INTO notifications (user_id, deal_id, kind, title, body)
     SELECT x.user_id, ${deal.id}, 'alert_match', x.title, ${deal.title}
     FROM jsonb_to_recordset(${sql.json(
-      matches.map((m) => ({ user_id: m.userId, title: `🔔 '${m.keyword}' 핫딜 등장!${priceText}` })),
+      matches.map((m) => ({ user_id: m.userId, title: `'${m.keyword}' 새 핫딜${priceText}` })),
     )}) AS x(user_id bigint, title text)`;
 
   await pushToUsers(
     matches.map((m) => m.userId),
     {
-      title: `🔔 기다리던 핫딜이 떴어요${priceText}`,
+      title: `기다리던 핫딜이 올라왔어요${priceText}`,
       body: deal.title,
       url: `${env.siteUrl}/deals/${deal.id}`,
       image: deal.imageUrl,

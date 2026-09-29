@@ -16,8 +16,10 @@ import { Comments } from "@/components/Comments";
 import { ReportButtons } from "@/components/ReportButtons";
 import { Sparkline } from "@/components/Sparkline";
 import { Countdown } from "@/components/Countdown";
-import { BackButton } from "@/components/BackButton";
+import { Icon } from "@/components/Icon";
 import { ShareArrival } from "@/components/ShareArrival";
+import { TopBar, Badge } from "@/components/ui";
+import { Img } from "@/components/Img";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ r?: string }> };
 
@@ -57,84 +59,81 @@ export default async function DealPage({ params, searchParams }: Props) {
   const rewardText = !user
     ? "로그인하고 공유하면 친구가 들어올 때마다 포인트를 받아요"
     : merchant.rewardEligible
-      ? `친구가 들어오면 포인트, 구매로 이어지면 구매 기여 포인트(${REWARD_POLICY.sharerRate * 100}%)까지!`
-      : "친구가 들어올 때마다 포인트가 쌓이고 헌터 랭킹이 올라가요";
+      ? `친구가 이 링크로 들어오면 10P, 구매하면 수수료의 ${REWARD_POLICY.sharerRate * 100}%를 포인트로 드려요`
+      : "친구가 이 링크로 들어올 때마다 10P를 드려요";
   const lv = levelOf(deal.userXp);
 
   return (
-    <article className="pb-24">
+    <article className="pb-28">
       <ShareArrival type="deal" id={deal.id} code={sp.r} />
-      <div className="pt-safe sticky top-0 z-30 flex h-12 items-center gap-2 bg-surface/95 px-2 backdrop-blur">
-        <BackButton />
-        <span className="truncate text-sm font-semibold">{merchant.name} 핫딜</span>
-      </div>
+      <TopBar title={merchant.name} />
 
-      <div className="relative aspect-square w-full bg-surface">
-        {deal.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={deal.imageUrl} alt={deal.title} className="h-full w-full object-contain" />
-        ) : (
-          <div className="flex h-full items-center justify-center text-7xl">🛍️</div>
+      <div className="relative aspect-square w-full bg-fill">
+        {deal.imageUrl && (
+          <Img src={deal.imageUrl} alt={deal.title} className={`h-full w-full object-contain ${ended ? "opacity-40" : ""}`} />
         )}
         {ended && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-2xl font-black text-white">
+          <span className="absolute inset-x-0 bottom-4 mx-auto w-fit rounded-full bg-ink/80 px-4 py-2 text-[14px] font-semibold text-surface">
             {deal.status === "soldout" ? "품절된 딜이에요" : "종료된 딜이에요"}
-          </div>
+          </span>
         )}
       </div>
 
-      <section className="bg-surface px-4 pb-4 pt-3">
+      <section className="bg-surface px-5 pb-5 pt-4">
         {deal.bountyId && (
-          <Link href={`/bounties/${deal.bountyId}`} className="wanted mb-3 flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold">
-            🎯 현상금 수배에서 발견된 상품이에요 <span className="ml-auto">수배 보기 ›</span>
+          <Link href={`/bounties/${deal.bountyId}`} className="mb-3 flex items-center gap-2 rounded-xl bg-brand-soft px-3.5 py-2.5 text-[14px] text-brand">
+            <Icon name="target" size={18} />
+            수배 요청으로 찾은 상품이에요
+            <Icon name="chevron" size={16} className="ml-auto" />
           </Link>
         )}
-        <div className="flex items-center gap-2 text-xs text-sub">
-          <span className="rounded bg-canvas px-1.5 py-0.5 font-semibold text-ink/80">{merchant.name}</span>
+        <div className="flex items-center gap-2 text-[13px] text-muted">
+          <span>{merchant.name}</span>
+          <span>·</span>
           <span>{timeAgo(deal.createdAt)}</span>
           {deal.endsAt && !ended && (
-            <span className="ml-auto">
-              <Countdown endsAt={deal.endsAt} big />
+            <span className="ml-auto flex items-center gap-1">
+              <Icon name="clock" size={15} />
+              <Countdown endsAt={deal.endsAt} />
             </span>
           )}
         </div>
-        <h1 className="mt-2 text-lg font-bold leading-snug">{deal.title}</h1>
-        <div className="mt-2 flex items-baseline gap-2">
-          {off > 0 && <span className="text-2xl font-black text-brand">{off}%</span>}
-          <span className="text-2xl font-black">{deal.price != null ? won(deal.price) : "가격은 링크에서 확인"}</span>
-          {deal.originalPrice && off > 0 && <span className="text-sm text-sub line-through">{won(deal.originalPrice)}</span>}
+        <h1 className="mt-1.5 text-[19px] font-semibold leading-snug">{deal.title}</h1>
+        <div className="mt-3 flex items-baseline gap-2">
+          {off > 0 && <span className="text-[24px] font-bold text-brand">{off}%</span>}
+          <span className="tnum text-[24px] font-bold">{deal.price != null ? won(deal.price) : "가격은 판매처에서 확인"}</span>
+          {deal.originalPrice && off > 0 && <span className="tnum text-[15px] text-muted line-through">{won(deal.originalPrice)}</span>}
         </div>
-        {deal.shipping && <p className="mt-1 text-sm text-sub">🚚 {deal.shipping}</p>}
-        {deal.description && <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed">{deal.description}</p>}
-        <Link
-          href={deal.handle ? `/@${deal.handle}` : "#"}
-          className="mt-4 flex items-center gap-2 rounded-xl bg-canvas px-3 py-2 text-sm"
-        >
-          <span className="text-lg">{lv.emoji}</span>
+        {deal.shipping && <p className="mt-1 text-[14px] text-sub">배송 {deal.shipping}</p>}
+        {deal.description && <p className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed">{deal.description}</p>}
+        <Link href={deal.handle ? `/@${deal.handle}` : "#"} className="mt-5 flex items-center gap-2.5 border-t border-line pt-4 text-[14px]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-fill text-[16px]">{deal.userChar ?? deal.nickname.slice(0, 1)}</span>
           <span className="font-semibold">{deal.nickname}</span>
-          <span className="text-xs text-sub">{lv.name}</span>
-          {deal.handle && <span className="ml-auto text-xs text-sub">채널 보기 ›</span>}
+          <Badge>Lv.{lv.level} {lv.name}</Badge>
+          {deal.handle && <Icon name="chevron" size={16} className="ml-auto text-muted" />}
         </Link>
       </section>
 
-      <div className="mt-2 space-y-2 px-3">
-        <VoteButtons
-          dealId={deal.id}
-          initialUp={deal.votesUp}
-          initialDown={deal.votesDown}
-          initialMine={myVote}
-          loggedIn={!!user}
-        />
-        <ShareButton dealId={deal.id} title={deal.title} shareUrl={shareUrl} rewardText={rewardText} />
-        <Sparkline points={history} />
-      </div>
+      <section className="mt-2 bg-surface px-5 py-5">
+        <h2 className="mb-3 text-[17px] font-bold">이 딜 어때요?</h2>
+        <VoteButtons dealId={deal.id} initialUp={deal.votesUp} initialDown={deal.votesDown} initialMine={myVote} loggedIn={!!user} />
+        <div className="mt-3">
+          <ShareButton dealId={deal.id} title={deal.title} shareUrl={shareUrl} rewardText={rewardText} label="친구에게 알려주기" />
+        </div>
+      </section>
 
-      <div className="mt-2">
-        <ReportButtons dealId={deal.id} loggedIn={!!user} />
+      {history.length >= 2 && (
+        <div className="mt-2">
+          <Sparkline points={history} />
+        </div>
+      )}
+
+      <div className="mt-2 space-y-2">
         <Comments dealId={deal.id} initial={comments} loggedIn={!!user} />
+        <ReportButtons dealId={deal.id} loggedIn={!!user} />
       </div>
 
-      <p className="px-4 py-4 text-[11px] leading-relaxed text-sub">
+      <p className="px-5 py-5 text-[12px] leading-relaxed text-muted">
         가격과 재고는 판매처 사정에 따라 바뀔 수 있어요.
         {deal.monetized &&
           (merchant.id === "coupang"
@@ -142,14 +141,14 @@ export default async function DealPage({ params, searchParams }: Props) {
             : " 구매 시 줍줍이 판매처로부터 일정 수수료를 받을 수 있으며, 구매 가격에는 영향이 없습니다.")}
       </p>
 
-      <div className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-md gap-2 border-t border-line bg-surface px-3 pt-2 pb-2">
+      <div className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-md gap-2 border-t border-line bg-surface px-4 pt-2.5 pb-2.5">
         <ShareButton dealId={deal.id} title={deal.title} shareUrl={shareUrl} rewardText={rewardText} variant="icon" />
         <a
           href={buyHref}
           target="_blank"
           rel="noopener sponsored"
-          className={`flex h-12 flex-1 items-center justify-center rounded-xl text-[16px] font-bold text-white ${
-            ended ? "bg-sub" : "bg-brand active:bg-brand-dark"
+          className={`press flex h-[52px] flex-1 items-center justify-center rounded-xl text-[16px] font-semibold ${
+            ended ? "bg-fill text-sub" : "bg-brand text-white"
           }`}
         >
           {ended ? "판매처에서 확인하기" : `${merchant.name}에서 구매하기`}

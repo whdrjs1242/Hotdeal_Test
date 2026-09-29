@@ -1,7 +1,10 @@
 import { ImageResponse } from "next/og";
+import { loadKoreanFont } from "@/lib/ogFont";
 
+/** 앱 아이콘: 주황 바탕에 흰 '줍' */
 export async function GET(_req: Request, { params }: { params: Promise<{ size: string }> }) {
   const size = (await params).size === "512" ? 512 : 192;
+  const font = await loadKoreanFont("줍");
   return new ImageResponse(
     (
       <div
@@ -11,16 +14,21 @@ export async function GET(_req: Request, { params }: { params: Promise<{ size: s
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #ff6a3d 0%, #ff2e55 100%)",
+          background: "#ff5b2e",
           color: "white",
-          fontSize: size * 0.62,
-          fontWeight: 900,
-          letterSpacing: -size * 0.04,
+          fontSize: size * 0.56,
+          fontWeight: 800,
+          fontFamily: "Kr",
         }}
       >
-        J
+        줍
       </div>
     ),
-    { width: size, height: size, headers: { "cache-control": "public, max-age=31536000, immutable" } },
+    {
+      width: size,
+      height: size,
+      fonts: font ? [{ name: "Kr", data: font, weight: 800, style: "normal" }] : undefined,
+      headers: { "cache-control": "public, max-age=31536000, immutable" },
+    },
   );
 }

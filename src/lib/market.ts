@@ -19,9 +19,9 @@ export interface ShopItem {
 export class MarketError extends Error {}
 
 export const RARITY = {
-  common: { label: "일반", color: "#898781" },
-  rare: { label: "레어", color: "#2a78d6" },
-  epic: { label: "에픽", color: "#4a3aa7" },
+  common: { label: "일반", color: "#8b95a1" },
+  rare: { label: "희귀", color: "#3182f6" },
+  epic: { label: "영웅", color: "#6b4fd8" },
   legendary: { label: "전설", color: "#c98500" },
 } as const;
 
@@ -88,7 +88,7 @@ export async function settleOrder(orderId: number, action: "fulfill" | "cancel",
                fulfilled_at = now() WHERE id = ${orderId}`;
       await tx`
         INSERT INTO notifications (user_id, kind, title, body)
-        VALUES (${o.userId}, 'market', ${`🎁 ${o.name} 발송 완료`}, 'MY > 교환 내역에서 확인하세요')`;
+        VALUES (${o.userId}, 'market', ${`${o.name} 발송 완료`}, '내 정보 > 교환 내역에서 확인하세요')`;
     } else {
       await tx`UPDATE orders SET status = 'canceled', memo = ${memo ?? null}, fulfilled_at = now() WHERE id = ${orderId}`;
       await tx`UPDATE shop_items SET stock = stock + 1 WHERE id = ${o.itemId} AND stock IS NOT NULL`;

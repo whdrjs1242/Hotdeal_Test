@@ -6,13 +6,14 @@ export function EquipButton({
   itemKey,
   equipped,
   name,
-  color,
+  rarity,
   children,
 }: {
   slot: string;
   itemKey: string;
   equipped: boolean;
   name: string;
+  rarity?: string;
   color?: string;
   children: React.ReactNode;
 }) {
@@ -28,13 +29,12 @@ export function EquipButton({
   return (
     <button
       onClick={toggle}
-      className={`flex flex-col items-center gap-1 rounded-xl bg-surface p-2 ring-1 ${equipped ? "ring-2 ring-brand" : "ring-line"}`}
+      aria-pressed={equipped}
+      className={`press flex flex-col items-center gap-1 rounded-xl p-2 ring-1 ring-inset ${equipped ? "bg-brand-soft ring-2 ring-brand" : "bg-fill ring-transparent"}`}
     >
       <span className="flex h-10 items-center justify-center">{children}</span>
-      <span className="line-clamp-1 text-[10px]" style={{ color }}>
-        {name}
-      </span>
-      {equipped && <span className="text-[10px] font-bold text-brand">장착 중</span>}
+      <span className="line-clamp-1 text-[12px] font-semibold">{name}</span>
+      <span className={`text-[11px] ${equipped ? "font-semibold text-brand" : "text-muted"}`}>{equipped ? "적용 중" : rarity}</span>
     </button>
   );
 }

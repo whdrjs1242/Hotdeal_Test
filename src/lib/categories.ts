@@ -1,16 +1,16 @@
 export const CATEGORIES = [
-  { id: "all", name: "전체", emoji: "✨" },
-  { id: "digital", name: "디지털", emoji: "💻" },
-  { id: "appliance", name: "가전", emoji: "🔌" },
-  { id: "food", name: "식품", emoji: "🍜" },
-  { id: "living", name: "생활", emoji: "🧻" },
-  { id: "fashion", name: "패션", emoji: "👟" },
-  { id: "beauty", name: "뷰티", emoji: "💄" },
-  { id: "baby", name: "육아", emoji: "🍼" },
-  { id: "travel", name: "여행", emoji: "✈️" },
-  { id: "overseas", name: "해외직구", emoji: "🌏" },
-  { id: "coupon", name: "쿠폰/이벤트", emoji: "🎟️" },
-  { id: "etc", name: "기타", emoji: "📦" },
+  { id: "all", name: "전체" },
+  { id: "digital", name: "디지털" },
+  { id: "appliance", name: "가전" },
+  { id: "food", name: "식품" },
+  { id: "living", name: "생활" },
+  { id: "fashion", name: "패션" },
+  { id: "beauty", name: "뷰티" },
+  { id: "baby", name: "육아" },
+  { id: "travel", name: "여행" },
+  { id: "overseas", name: "해외직구" },
+  { id: "coupon", name: "쿠폰/이벤트" },
+  { id: "etc", name: "기타" },
 ] as const;
 
 export type CategoryId = (typeof CATEGORIES)[number]["id"];

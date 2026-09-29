@@ -99,7 +99,7 @@ export function ItemToggle({ id, active }: { id: number; active: boolean }) {
 }
 
 export function AddItemForm() {
-  const [f, setF] = useState({ kind: "giftcard", name: "", image: "🎫", pricePoints: "", stock: "", maxPerUserMonth: "3" });
+  const [f, setF] = useState({ kind: "giftcard", name: "", image: "", pricePoints: "", stock: "", maxPerUserMonth: "3" });
   const [msg, setMsg] = useState("");
   async function add(e: React.FormEvent) {
     e.preventDefault();

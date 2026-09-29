@@ -28,6 +28,7 @@ const SINK_LABEL: Record<string, string> = {
   bounty_stake: "수배지 현상금",
   bounty_fund: "현상금 올리기",
   question: "질문 포인트",
+  chips: "구슬로 교환",
 };
 const POINT_GROUPS: { label: string; kinds: string[] }[] = [
   { label: "헌터", kinds: ["hunter_reward", "post_reward"] },

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { won } from "@/lib/format";
+import { Icon } from "./Icon";
 
 interface A {
   id: number;
@@ -25,7 +25,7 @@ export function AlertManager({ initial }: { initial: A[] }) {
       body: JSON.stringify({ keyword: kw, maxPrice: maxPrice ? Number(maxPrice.replace(/[^\d]/g, "")) : null }),
     });
     const data = await res.json();
-    if (!res.ok) return setError(data.error);
+    if (!res.ok) return setError(data.error ?? data.issues?.[0]?.message ?? "추가하지 못했어요");
     setItems((prev) => [data, ...prev.filter((p) => p.id !== data.id)]);
     setKeyword("");
     setMaxPrice("");
@@ -37,46 +37,41 @@ export function AlertManager({ initial }: { initial: A[] }) {
   }
 
   return (
-    <div className="rounded-2xl bg-surface p-4">
-      <h2 className="font-bold">🎯 키워드 알림</h2>
-      <p className="mt-0.5 text-xs text-sub">키워드가 들어간 딜이 목표가 이하로 올라오면 바로 알려드려요.</p>
-      <form onSubmit={add} className="mt-3 flex gap-2">
-        <input
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="키워드"
-          className="h-10 min-w-0 flex-1 rounded-xl bg-canvas px-3 text-sm outline-none"
-        />
-        <input
-          value={maxPrice}
-          onChange={(e) => setMaxPrice(e.target.value)}
-          placeholder="목표가(선택)"
-          inputMode="numeric"
-          className="h-10 w-28 rounded-xl bg-canvas px-3 text-sm outline-none"
-        />
-        <button className="h-10 rounded-xl bg-brand px-3 text-sm font-bold text-white">추가</button>
+    <div className="mt-5">
+      <h2 className="text-[17px] font-bold">키워드 알림</h2>
+      <p className="mt-0.5 text-[13px] text-muted">키워드가 들어간 딜이 목표가 이하로 올라오면 알려드려요.</p>
+      <form onSubmit={add} className="mt-3 grid grid-cols-[1fr_108px_auto] gap-2">
+        <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="키워드" className="h-11 min-w-0 rounded-xl bg-fill px-3.5 text-[15px] outline-none placeholder:text-muted" />
+        <input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="목표가(선택)" inputMode="numeric" className="h-11 min-w-0 rounded-xl bg-fill px-3 text-[14px] outline-none placeholder:text-muted" />
+        <button disabled={keyword.trim().length < 2} className="press h-11 rounded-xl bg-ink px-4 text-[15px] font-semibold text-surface disabled:opacity-30">
+          추가
+        </button>
       </form>
-      {error && <p className="mt-2 text-xs text-brand">{error}</p>}
-      {items.length === 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {SUGGESTIONS.map((s) => (
-            <button key={s} onClick={() => add(undefined, s)} className="rounded-full border border-line px-2.5 py-1 text-xs">
-              + {s}
-            </button>
-          ))}
+      {error && <p className="mt-2 text-[13px] text-negative">{error}</p>}
+      {items.length === 0 ? (
+        <div className="mt-3">
+          <p className="text-[13px] text-muted">많이 등록하는 키워드</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {SUGGESTIONS.map((s) => (
+              <button key={s} onClick={() => add(undefined, s)} className="press rounded-full px-3 py-1.5 text-[13px] text-sub ring-1 ring-inset ring-line">
+                + {s}
+              </button>
+            ))}
+          </div>
         </div>
+      ) : (
+        <ul className="mt-3 flex flex-wrap gap-1.5">
+          {items.map((a) => (
+            <li key={a.id} className="flex items-center gap-1 rounded-full bg-fill py-1.5 pl-3 pr-2 text-[14px]">
+              <b className="font-semibold">{a.keyword}</b>
+              {a.maxPrice && <span className="text-[12px] text-muted">{a.maxPrice.toLocaleString()}원 이하</span>}
+              <button onClick={() => remove(a.id)} aria-label={`${a.keyword} 알림 삭제`} className="ml-0.5 text-muted">
+                <Icon name="close" size={16} />
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
-      <ul className="mt-3 flex flex-wrap gap-2">
-        {items.map((a) => (
-          <li key={a.id} className="flex items-center gap-1 rounded-full bg-brand-soft px-3 py-1.5 text-sm">
-            <b>{a.keyword}</b>
-            {a.maxPrice && <span className="text-xs text-sub">≤{won(a.maxPrice)}</span>}
-            <button onClick={() => remove(a.id)} aria-label="삭제" className="ml-1 text-sub">
-              ✕
-            </button>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

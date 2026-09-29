@@ -28,7 +28,7 @@ export const RARITY = {
 export async function listShopItems() {
   return sql<ShopItem[]>`
     SELECT id, kind, slot, item_key, name, description, image, rarity, price_points, stock, max_per_user_month
-    FROM shop_items WHERE active ORDER BY sort, id`;
+    FROM shop_items WHERE active AND price_chips IS NULL ORDER BY sort, id`;
 }
 
 export async function ownedItemIds(userId: number) {

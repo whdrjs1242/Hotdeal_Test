@@ -195,9 +195,9 @@ export default async function MePage() {
         {myBounties.items.length === 0 && <p className="rounded-2xl bg-surface py-5 text-center text-xs text-sub">아직 건 수배지가 없어요</p>}
       </section>
 
-      <section className="bg-surface">
+      <section>
         <h2 className="px-4 pt-4 font-bold">내가 올린 딜</h2>
-        <div className="divide-y divide-line">
+        <div className="space-y-2.5 p-3">
           {myDeals.items.map((d) => (
             <DealCard key={d.id} deal={d} />
           ))}

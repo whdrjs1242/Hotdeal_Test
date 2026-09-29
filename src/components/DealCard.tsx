@@ -14,9 +14,9 @@ export function DealCard({ deal, rank, refCode }: { deal: Deal; rank?: number; r
   return (
     <Link
       href={`/deals/${deal.id}${refCode ? `?r=${refCode}` : ""}`}
-      className={`flex gap-3 bg-surface px-4 py-3 active:bg-canvas ${ended ? "opacity-50" : ""}`}
+      className={`card-soft flex gap-3 p-3 transition active:scale-[0.99] ${ended ? "opacity-50" : ""}`}
     >
-      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-canvas">
+      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-peach/60">
         {deal.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={deal.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
@@ -24,7 +24,9 @@ export function DealCard({ deal, rank, refCode }: { deal: Deal; rank?: number; r
           <div className="flex h-full items-center justify-center text-3xl">🛍️</div>
         )}
         {rank != null && rank < 3 && (
-          <span className="absolute left-1 top-1 rounded-md bg-ink/80 px-1.5 text-xs font-bold text-white">{rank + 1}</span>
+          <span className="font-display absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-brand text-sm text-white shadow">
+            {rank + 1}
+          </span>
         )}
         {ended && (
           <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-bold text-white">
@@ -42,7 +44,7 @@ export function DealCard({ deal, rank, refCode }: { deal: Deal; rank?: number; r
         </div>
         <h3 className="mt-0.5 line-clamp-2 text-[15px] font-medium leading-snug">{deal.title}</h3>
         <div className="mt-1 flex items-baseline gap-1.5">
-          {off > 0 && <span className="text-[15px] font-extrabold text-brand">{off}%</span>}
+          {off > 0 && <span className="rounded-lg bg-brand px-1.5 text-[13px] font-extrabold text-white">-{off}%</span>}
           <span className="text-[16px] font-extrabold">{deal.price != null ? won(deal.price) : "가격 확인"}</span>
           {deal.shipping && <span className="text-[11px] text-sub">{deal.shipping}</span>}
         </div>

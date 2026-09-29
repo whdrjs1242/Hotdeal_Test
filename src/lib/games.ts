@@ -158,7 +158,7 @@ export async function drawGacha(userId: number) {
   return sql.begin(async (tx) => {
     const pool = await tx<{ id: number; itemKey: string; name: string; image: string; rarity: string; slot: string }[]>`
       SELECT i.id, i.item_key, i.name, i.image, i.rarity, i.slot FROM shop_items i
-      WHERE i.kind = 'cosmetic' AND i.active
+      WHERE i.kind = 'cosmetic' AND i.active AND i.price_chips IS NULL
         AND NOT EXISTS (SELECT 1 FROM user_items ui WHERE ui.user_id = ${userId} AND ui.item_id = i.id)`;
     if (!pool.length) throw new GameError("모든 꾸미기를 모았어요! 🎉");
     await debit(tx, userId, GAME_POLICY.gacha.cost, "gacha", "꾸미기 뽑기");

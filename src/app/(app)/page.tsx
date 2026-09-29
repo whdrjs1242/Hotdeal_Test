@@ -53,17 +53,18 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
 
   return (
     <>
-      <header className="pt-safe sticky top-0 z-30 bg-surface/95 backdrop-blur">
-        <div className="flex items-center gap-3 px-4 pt-3">
-          <Link href="/" className="text-2xl font-black tracking-tight text-brand">
-            줍줍
+      <header className="pt-safe sticky top-0 z-30 bg-canvas/90 backdrop-blur-lg">
+        <div className="flex items-center gap-2.5 px-4 pt-3">
+          <Link href="/" className="flex items-center gap-1">
+            <span className="floaty text-2xl">🐥</span>
+            <span className="font-display text-[26px] leading-none text-brand">줍줍</span>
           </Link>
           <form action="/" className="flex-1">
             <input
               name="q"
               defaultValue={q ?? ""}
               placeholder="어떤 핫딜 찾아요? (예: 에어팟)"
-              className="h-9 w-full rounded-full bg-canvas px-4 text-sm outline-none placeholder:text-sub"
+              className="h-10 w-full rounded-2xl bg-surface px-4 text-sm shadow-[inset_0_0_0_1.5px_var(--color-line)] outline-none placeholder:text-sub focus:shadow-[inset_0_0_0_2px_var(--color-brand)]"
             />
           </form>
           <Link href="/alerts" aria-label="알림" className="relative text-xl">
@@ -75,12 +76,14 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             )}
           </Link>
         </div>
-        <nav className="no-scrollbar mt-2 flex gap-4 overflow-x-auto border-b border-line px-4">
+        <nav className="no-scrollbar mt-3 flex gap-1.5 overflow-x-auto px-4">
           {SORTS.map((s) => (
             <Link
               key={s.id}
               href={qs({ sort: s.id })}
-              className={`shrink-0 border-b-2 pb-2 text-[15px] ${sort === s.id ? "border-ink font-bold" : "border-transparent text-sub"}`}
+              className={`shrink-0 rounded-2xl px-3.5 py-2 text-[14px] ${
+                sort === s.id ? "btn-pop bg-ink font-bold text-surface" : "bg-surface text-sub ring-1 ring-line"
+              }`}
             >
               {s.label}
             </Link>
@@ -91,8 +94,8 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
             <Link
               key={c.id}
               href={qs({ category: c.id })}
-              className={`shrink-0 rounded-full border px-3 py-1 text-[13px] ${
-                category === c.id ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink/80"
+              className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] ${
+                category === c.id ? "bg-brand-soft font-bold text-brand ring-2 ring-brand/40" : "bg-surface text-ink/80 ring-1 ring-line"
               }`}
             >
               {c.emoji} {c.name}
@@ -104,13 +107,13 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
       {!q && (
         <nav className="mt-3 grid grid-cols-4 gap-2 px-4 text-center text-[11px] font-semibold">
           {[
-            { href: "/questions", icon: "💬", label: "살까말까 질문" },
-            { href: "/games/quiz", icon: "🏷️", label: "최저가 맞히기" },
-            { href: "/market", icon: "🛍️", label: "포인트 마켓" },
-            { href: "/rank", icon: "🏆", label: "헌터 랭킹" },
+            { href: "/questions", icon: "💬", label: "살까말까", tint: "bg-sky" },
+            { href: "/casino", icon: "🎰", label: "라운지", tint: "bg-lilac" },
+            { href: "/points", icon: "🎁", label: "포인트·게임", tint: "bg-butter" },
+            { href: "/market", icon: "🛍️", label: "마켓", tint: "bg-mint" },
           ].map((l) => (
-            <Link key={l.href} href={l.href} className="rounded-2xl bg-surface py-2.5 ring-1 ring-line active:scale-95">
-              <div className="text-2xl">{l.icon}</div>
+            <Link key={l.href} href={l.href} className={`rounded-3xl ${l.tint} py-3 transition active:scale-95`}>
+              <div className="text-[26px] leading-8">{l.icon}</div>
               {l.label}
             </Link>
           ))}
@@ -120,7 +123,7 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
       {!q && hotBounties.items.length > 0 && (
         <section className="mt-3">
           <div className="flex items-baseline justify-between px-4">
-            <h2 className="font-black">🎯 지금 뜨는 현상금 수배</h2>
+            <h2 className="text-lg">🎯 지금 뜨는 현상금 수배</h2>
             <Link href="/bounties" className="text-xs text-sub">
               전체 ›
             </Link>
@@ -148,14 +151,14 @@ export default async function Home({ searchParams }: { searchParams: SP }) {
       )}
 
       {!q && (
-        <div className="mx-4 mt-3 rounded-xl bg-brand-soft px-3 py-2 text-xs text-ink/80">
+        <div className="mx-4 mt-3 rounded-2xl bg-bubble px-3.5 py-2.5 text-xs text-ink/80">
           💸 오늘 줍줍러들이 아낀 돈 <b>{compact(Number(stats.saved))}원</b> · 새 딜 {stats.deals}개 · 구매 이동 {compact(stats.clicks)}회
         </div>
       )}
 
       {q && <p className="px-4 pt-3 text-sm text-sub">‘{q}’ 검색 결과</p>}
 
-      <section className="mt-3 divide-y divide-line">
+      <section className="mt-3 space-y-2.5 px-3">
         {items.length === 0 ? (
           <div className="px-4 py-16 text-center text-sub">
             <div className="text-4xl">🧺</div>

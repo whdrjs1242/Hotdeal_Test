@@ -69,7 +69,7 @@ export default async function ChannelPage({ params }: Props) {
           {c.bio && <span className="ml-2">{c.bio}</span>}
         </p>
       </header>
-      <section className="divide-y divide-line">
+      <section className="space-y-2.5 px-3">
         {deals.items.map((d) => (
           <DealCard key={d.id} deal={d} refCode={c.refCode} />
         ))}

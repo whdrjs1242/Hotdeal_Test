@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #ff4d2e;
+  --color-brand-dark: #e03a1c;
+  --color-brand-soft: #fff1ec;
+  --color-cool: #3b82f6;
+  --color-ink: #16181d;
+  --color-sub: #6b7280;
+  --color-line: #eceef1;
+  --color-surface: #ffffff;
+  --color-canvas: #f6f7f9;
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-ink: #f2f3f5;
+    --color-sub: #9aa1ab;
+    --color-line: #262a31;
+    --color-surface: #16181d;
+    --color-canvas: #0d0f12;
+    --color-brand-soft: #2a1612;
+  }
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  overscroll-behavior-y: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.animate-pop {
+  animation: pop 0.3s ease-out;
+}

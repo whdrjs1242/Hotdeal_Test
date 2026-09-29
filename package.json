@@ -1,0 +1,35 @@
+{
+  "name": "jupjup",
+  "version": "0.1.0",
+  "private": true,
+  "description": "줍줍 — 핫딜을 줍고, 공유하고, 함께 버는 모바일 퍼스트 핫딜 플랫폼",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:seed": "node scripts/seed.mjs"
+  },
+  "dependencies": {
+    "ioredis": "^5.8.0",
+    "jose": "^6.1.0",
+    "next": "16.3.6",
+    "postgres": "^3.4.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "web-push": "^3.6.7",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
+    "tailwindcss": "^4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

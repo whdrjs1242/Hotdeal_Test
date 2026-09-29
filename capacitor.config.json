@@ -1,0 +1,12 @@
+{
+  "appId": "kr.jupjup.app",
+  "appName": "줍줍",
+  "webDir": "public",
+  "server": {
+    "url": "https://jupjup.kr",
+    "cleartext": false,
+    "allowNavigation": ["jupjup.kr", "*.jupjup.kr"]
+  },
+  "android": { "allowMixedContent": false },
+  "ios": { "contentInset": "always" }
+}

@@ -42,7 +42,10 @@ class MemoryStore implements Store {
 }
 
 class RedisStore implements Store {
-  constructor(private r: Redis) {}
+  constructor(private r: Redis) {
+    // 연결 오류는 각 호출에서 처리(캐시 미스로 폴백)하므로 전역 unhandled 로그만 막는다
+    r.on("error", () => {});
+  }
   get(key: string) {
     return this.r.get(key);
   }

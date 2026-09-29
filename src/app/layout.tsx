@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { BottomNav } from "@/components/BottomNav";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import { env } from "@/lib/env";
 
@@ -35,10 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <div className="mx-auto min-h-dvh max-w-md bg-canvas shadow-sm">
-          <main className="pb-24">{children}</main>
-          <BottomNav />
-        </div>
+        {children}
         <ServiceWorker />
       </body>
     </html>
